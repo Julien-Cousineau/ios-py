@@ -249,9 +249,14 @@ class IOS:
         ndatetime = len(datetimes)
         nMc = len(rc)
         nmc = len(rc)
-        M_wave = np.zeros(1, dtype=self.getWaveType(npoint,ndatetime,nMc))
-        m_wave = np.zeros(1, dtype=self.getMinorWaveType(npoint, ndatetime, nMc))
-    
+        
+        print nMc
+        print ndatetime
+        print npoint
+        # M_wave = np.zeros(1, dtype=self.getWaveType(npoint,ndatetime,nMc))
+        # m_wave = np.zeros(1, dtype=self.getMinorWaveType(npoint, ndatetime, nmc))
+        
+        
         # Major Constituents
         doods = newcons['dood'][rc, 0]
         phase = newcons['phase'][rc, 0]

@@ -65,7 +65,7 @@ def testCHS():
     csvPath = r'CHS_Constants.csv'
     
     ios = IOS()
-    datetimes = np.arange('2000-01-01', '2001-01-01', np.timedelta64(15, 'm'), dtype='datetime64')
+    datetimes = np.arange('2000-01-01', '2000-02-01', np.timedelta64(15, 'm'), dtype='datetime64')
     stations = getCHS(csvPath)
 
     t = timeit.Timer(functools.partial(ios.generateTS,datetimes=datetimes, stations=stations))
@@ -104,9 +104,9 @@ def testSomething():
     csvPath = r'CHS_Constants.csv'
     
     ios = IOS()
-    datetimes = np.arange('2000-01-01', '2001-01-01', np.timedelta64(15, 'm'), dtype='datetime64')
+    datetimes = np.arange('2000-01-01', '2000-01-02', np.timedelta64(15, 'm'), dtype='datetime64')
     stations = getCHS(csvPath)
-    stations = stations[:4]
+    # stations = stations[:4]
     
     t = timeit.Timer(functools.partial(ios.generateTS,datetimes=datetimes, stations=stations))
     print t.timeit(1)
