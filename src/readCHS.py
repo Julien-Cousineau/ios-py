@@ -1,9 +1,6 @@
-
+import csv
 import numpy as np
-import timeit, functools,csv
 
-from multiprocessing import Pool
-from ios import *
 
 # ------------------------------------------------------------------------------
 # Type
