@@ -1,5 +1,5 @@
 import numpy as np
-import pandas as pd
+
 import math,time,functools,copy_reg,types
 from multiprocessing import Pool
 
@@ -304,9 +304,11 @@ class IOS:
         print("generateSpaceV {0}".format(time.clock() - start))
 
         start = time.clock()
-        values = self.generateTimeSpace(waveS, waveD, stations, idx)
+        stationids = stations['id']
+        values =  self.generateTimeSpace(waveS, waveD, stations, idx)
         print("generateTimeSpace {0}".format(time.clock() - start))
-        self.writeCSV(values)
+        with open(r'temp_0.csv', 'w') as f:
+            self.writeCSV(f,stationids,values)
 
     def RunP(self, nprocessor,datetimes, stations,cons):
         waveS, refstations, idx = self._generateTimeV(datetimes, stations,cons)
@@ -315,28 +317,40 @@ class IOS:
         p = Pool(nprocessor)
         t = functools.partial(self._pGenerateSpaceV, waveS=waveS, stations=refstations)
         nrefstations = len(refstations)
-        waveD = np.asarray(p.map(t, xrange(nrefstations)))
+        waveD = np.asarray(p.map(t, xrange(nrefstations))).ravel()
         print("generateSpaceV {0}".format(time.clock() - start))
         p.close()
         p.join()
 
 
         p = Pool(nprocessor)
-        start = time.clock()
+
         tt = functools.partial(self._pGenerateTimeSpace, waveS=waveS, waveD=waveD, stations=stations, idx=idx)
-        values = p.map(tt, xrange(int(math.ceil(len(stations) / 2))))
-        p.close()
-        p.join()
-        print("generateTimeSpace {0}".format(time.clock() - start))
-        self.writeCSV(values)
 
-    # ts = pd.to_datetime(str(date))
-    # d = ts.strftime('%Y.%m.%d')
+        nrows = int(math.ceil(len(stations) / 100))
+        divider=10
 
-    def writeCSV(self,values):
-        df = pd.DataFrame(values)
-        df.to_csv("temp.csv")
+        nrowspergroup=int(math.ceil(nrows/divider))
+        with open(r'temp_10.csv', 'w') as f:
+            for i in range(divider):
+                start = time.clock()
+                istart=i*nrowspergroup
+                iend =istart + nrowspergroup
+                results = p.map(tt, xrange(istart,iend))
+                print("generateTimeSpace {0}".format(time.clock() - start))
+                for result in results:
+                    stationids=result[0]
+                    values = result[1]
+                    self.writeCSV(f, stationids, values)
 
+
+    def writeCSV(self,f,stationids,values):
+        for i in range(len(stationids)):
+            id = stationids[i]
+            ts = values[i]
+            f.write(str(id) + ",")
+            f.write(",".join(map("{:.3f}".format, ts)))
+            f.write("\n")
 
     def _generateTimeV(self,datetimes,stations,cons):
         start = time.clock()
@@ -359,17 +373,18 @@ class IOS:
         return self.generateSpaceV(waveS, pstations)
 
     def _pGenerateTimeSpace(self,x, waveS, waveD, stations, idx):
-        i = 2 * x
-        j = 2 * (x + 1)
+        i = 100 * x
+        j = 100 * (x + 1)
         if j > len(stations):
             j = len(stations)
         pstations = stations[i:j]
         pidx = idx[i:j]
 
-        return self.generateTimeSpace(waveS, waveD, pstations, pidx)
+        values = self.generateTimeSpace(waveS, waveD, pstations, pidx)
 
 
 
+        return [pstations['id'],values]
 
     def generateTimeV(self, datetimes, cons):
         newcons = self.newcons
@@ -499,6 +514,12 @@ class IOS:
         m_res = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
         m_res2 = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt), axis=-1)
 
-        ress = M_res + m_res - waveTS['M_A'][:, 0, np.newaxis]
-        res2s = M_res2 + m_res2 - waveTS['M_A'][:, 0, np.newaxis]
+        ress = M_res + m_res - waveTS['M_A'][:, 0]
+        res2s = M_res2 + m_res2 - waveTS['M_A'][:, 0]
         return ress
+
+
+    def extractConstituents(self,datetimes,stations,cons,):
+        waveS, refstations, idx = self._generateTimeV(datetimes, stations, cons)
+        waveD = self.generateSpaceV(waveS, refstations)
+        values = self.generateTimeSpace(waveS, waveD, stations, idx)
