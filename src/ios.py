@@ -2,9 +2,7 @@ import numpy as np
 
 import math,time,functools,copy_reg,types
 from multiprocessing import Pool
-
-
-
+import scipy.linalg as linalg
 
 def _pickle_method(m):
     if m.im_self is None:
@@ -16,9 +14,8 @@ copy_reg.pickle(types.MethodType, _pickle_method)
 
 
 class IOS:
-    # ------------------------------------------------------------------------------------------------------------------
-    # Types
     def __init__(self):
+        # Types
         self.astroType = np.dtype([('d1', 'f8'),
                               ('d12', 'f8'),
                               ('d2', 'f8'),
@@ -46,16 +43,13 @@ class IOS:
                                     ('r', 'f8'),
                                     ('zeta', 'f8'),
                                     ('konans', 'i4')])
-
         self.satType = np.dtype([('deld', '3i4'),
                             ('phase', 'f8'),
                             ('ratio', 'f8'),
                             ('corr', 'i4'),
                             ('adj', 'f8')])
-
         self.shallconType = np.dtype([('icon', 'i4'),
                                  ('factor', 'f8')])
-
         self.newconType = np.dtype([('name', '|S8'),
                                ('dood', '6f8'),
                                ('nsats', 'i4'),
@@ -65,7 +59,6 @@ class IOS:
                                ('u', 'f8'),
                                ('v', 'f8'),
                                ('freq', 'f8')])
-
         self.conRType = np.dtype([('phase', 'f8'),
                              ('uu', 'f8', 5),
                              ('sumc', 'f8'),
@@ -74,15 +67,26 @@ class IOS:
                              ('u', 'f8'),
                              ('v', 'f8'),
                              ('freq', 'f8')])
-        
         self.tempType = np.dtype([('ajd', 'f8')])
-
         self.stationType = np.dtype([('name', '|S32'),
                                 ('id', 'i4'),
                                 ('xy', '2f8',),
                                 ('constituents', self.constituentType, 200)])
 
+        # Properties
+        self._stations=None
+
+        # Ini newcons and newshalls
         self.newcons, self.newshalls = self.getIOS()
+
+    # @property
+    # def stations(self):
+    #     return self._stations
+    #
+    # @property
+    # def stations(self,stations):
+    #
+
     # ------------------------------------------------------------------------------------------------------------------
     # Functions for types (Initialization)
     def getNewshallType(self):
@@ -305,7 +309,7 @@ class IOS:
 
         start = time.clock()
         stationids = stations['id']
-        values =  self.generateTimeSpace(waveS, waveD, stations, idx)
+        values,v2 =  self.generateTimeSpace(waveS, waveD, stations, idx)
         print("generateTimeSpace {0}".format(time.clock() - start))
         with open(r'temp_0.csv', 'w') as f:
             self.writeCSV(f,stationids,values)
@@ -380,7 +384,7 @@ class IOS:
         pstations = stations[i:j]
         pidx = idx[i:j]
 
-        values = self.generateTimeSpace(waveS, waveD, pstations, pidx)
+        values,v2 = self.generateTimeSpace(waveS, waveD, pstations, pidx)
 
 
 
@@ -493,33 +497,122 @@ class IOS:
         nmc = len(sc1)
         nstations = len(stations)
 
+        res_1=[]
+        res_2 = []
+        for var in ['eta','u','v']:
+            waveTS = np.zeros(nstations, dtype=self.getPSType(nMc, nmc))
+            waveTS['M_A'][:, :, 0] = stations['constituents'][var][:, rc1, 0, 0]
+            waveTS['M_phi'][:, :, 0] = stations['constituents'][var][:, rc1, 0, 1]
+            waveTS['m_A'][:, :, 0] = stations['constituents'][var][:, sc1, 0, 0]
+            waveTS['m_phi'][:, :, 0] = stations['constituents'][var][:, sc1, 0, 1]
+
+            M_revgmt = waveS['M_freq'][0] * waveS['dthr'][0][:, None] + waveD['M_u'][idx] + waveS['M_v'][0] - waveTS['M_phi'][
+                                                                                                              :, :, 0][:,
+                                                                                                              np.newaxis] / 360.0
+            M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
+            M_res = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt), axis=-1)
+            M_res2 = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt), axis=-1)
+
+            m_revgmt = waveS['m_freq'][0] * waveS['dthr'][0][:, None] + waveD['m_u'][idx] + waveS['m_v'][0] - waveTS[
+                                                                                                                  'm_phi'][
+                                                                                                              :, :, 0][:,
+                                                                                                              np.newaxis] / 360.0
+            m_radgmt = 2.0 * np.pi * np.modf(m_revgmt)[0]
+            m_res = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
+            m_res2 = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt), axis=-1)
+
+            res_1.append(M_res + m_res - waveTS['M_A'][:, 0])
+            res_2.append(M_res2 + m_res2 - waveTS['M_A'][:, 0])
+        return np.asarray(res_1),np.asarray(res_2)
+
+
+
+
+
+
+
+
+    def generateTSConstituents(self,waveS, waveD, stations):
+        # ONLY need to run this for unique latitude position...
+        rc1 = waveS['rc1'][0][:, 0]
+        sc1 = waveS['sc1'][0][:, 0]
+        nMc = len(rc1)
+        nmc = len(sc1)
+        nstations = len(stations)
+
+
         waveTS = np.zeros(nstations, dtype=self.getPSType(nMc, nmc))
         waveTS['M_A'][:, :, 0] = stations['constituents']['eta'][:, rc1, 0, 0]
         waveTS['M_phi'][:, :, 0] = stations['constituents']['eta'][:, rc1, 0, 1]
         waveTS['m_A'][:, :, 0] = stations['constituents']['eta'][:, sc1, 0, 0]
         waveTS['m_phi'][:, :, 0] = stations['constituents']['eta'][:, sc1, 0, 1]
 
-        M_revgmt = waveS['M_freq'][0] * waveS['dthr'][0][:, None] + waveD['M_u'][idx] + waveS['M_v'][0] - waveTS['M_phi'][
+        M_revgmt = waveS['M_freq'][0] * waveS['dthr'][0][:, None] + waveD['M_u'] + waveS['M_v'][0] - waveTS['M_phi'][
                                                                                                           :, :, 0][:,
                                                                                                           np.newaxis] / 360.0
         M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
-        M_res = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt), axis=-1)
-        M_res2 = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt), axis=-1)
+        M_res = waveD['M_f'] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt)
+        M_res2 = waveD['M_f'] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt)
 
-        m_revgmt = waveS['m_freq'][0] * waveS['dthr'][0][:, None] + waveD['m_u'][idx] + waveS['m_v'][0] - waveTS[
+        M_all = np.append(M_res,M_res2[:,:,1:2],axis=2)
+
+
+
+        m_revgmt = waveS['m_freq'][0] * waveS['dthr'][0][:, None] + waveD['m_u'][0] + waveS['m_v'][0] - waveTS[
                                                                                                               'm_phi'][
                                                                                                           :, :, 0][:,
                                                                                                           np.newaxis] / 360.0
+
         m_radgmt = 2.0 * np.pi * np.modf(m_revgmt)[0]
-        m_res = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
-        m_res2 = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt), axis=-1)
-
-        ress = M_res + m_res - waveTS['M_A'][:, 0]
-        res2s = M_res2 + m_res2 - waveTS['M_A'][:, 0]
-        return ress
+        m_res = waveD['m_f'] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt)
+        m_res2 = waveD['m_f'] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt)
+        m_all = np.append(m_res, m_res2[:, :, 1:2], axis=2)
 
 
-    def extractConstituents(self,datetimes,stations,cons,):
+        return M_all,m_all
+
+
+
+
+    def resetConstants(self,stations):
+        # stations['constituents'][''][:, 1]
+        stations['constituents'][0]['eta'][:, 0, 0]= 1.0
+        stations['constituents'][0]['eta'][:, 0, 1]= 0.0
+
+        stations['constituents'][0]['u'][:, 0, 0] = 1.0
+        stations['constituents'][0]['u'][:, 0, 1] = 0.0
+
+        stations['constituents'][0]['v'][:, 0, 0] = 1.0
+        stations['constituents'][0]['v'][:, 0, 1] = 0.0
+
+        return stations
+
+    def extractConstituents(self,datetimes,ts,stations,cons):
+        stations = self.resetConstants(stations)
+
         waveS, refstations, idx = self._generateTimeV(datetimes, stations, cons)
         waveD = self.generateSpaceV(waveS, refstations)
-        values = self.generateTimeSpace(waveS, waveD, stations, idx)
+        M_res,m_res = self.generateTSConstituents(waveS, waveD, refstations)
+        M_inv=[]
+        m_inv = []
+        for i in range(len(refstations)):
+            if(M_res[i].size>0):
+                U, s, Vh = linalg.svd(M_res[i], full_matrices=False)
+                pinv_svd = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
+                M_inv.append(pinv_svd)
+
+            if (m_res[i].size > 0):
+                U, s, Vh = linalg.svd(m_res[i], full_matrices=False)
+                pinv_svd = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
+                m_inv.append(pinv_svd)
+        M_inv=np.asarray(M_inv)
+        m_inv = np.asarray(m_inv)
+
+        # pinv_svd = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
+
+        for j in range(len(stations)):
+            M_constants = np.einsum('ij,kj->ki', M_inv[idx[j]], ts[j])
+            m_constants = np.einsum('ij,kj->ki', m_inv[idx[j]], ts[j])
+
+
+
