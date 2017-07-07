@@ -27,8 +27,8 @@
       <file leaf-file-name="test.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="508">
-              <caret line="131" column="0" selection-start-line="131" selection-start-column="0" selection-end-line="131" selection-end-column="0" />
+            <state relative-caret-position="326">
+              <caret line="100" column="27" selection-start-line="100" selection-start-column="27" selection-end-line="100" selection-end-column="27" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -39,26 +39,45 @@
       <file leaf-file-name="ios.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/ios.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="431">
-              <caret line="609" column="0" selection-start-line="609" selection-start-column="0" selection-end-line="609" selection-end-column="0" />
+            <state relative-caret-position="187">
+              <caret line="113" column="60" selection-start-line="113" selection-start-column="60" selection-end-line="113" selection-end-column="60" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
-                <element signature="e#438#1292#0" expanded="false" />
-                <element signature="e#1713#1907#0" expanded="false" />
-                <element signature="e#1946#2013#0" expanded="false" />
-                <element signature="e#2050#2449#0" expanded="false" />
-                <element signature="e#2484#2808#0" expanded="false" />
-                <element signature="e#3569#3861#0" expanded="false" />
-                <element signature="e#7837#8777#0" expanded="false" />
-                <element signature="e#8842#10548#0" expanded="false" />
-                <element signature="e#10618#11418#0" expanded="false" />
-                <element signature="e#11487#12156#0" expanded="false" />
-                <element signature="e#12224#12334#0" expanded="false" />
-                <element signature="e#14392#14599#0" expanded="false" />
-                <element signature="e#15236#15318#0" expanded="false" />
-                <element signature="e#15394#15667#0" expanded="false" />
-                <marker date="1499374420133" expanded="false" signature="13123:14337" ph="..." />
+                <element signature="e#452#1306#0" expanded="false" />
+                <element signature="e#1727#1921#0" expanded="false" />
+                <element signature="e#1960#2027#0" expanded="false" />
+                <element signature="e#2064#2463#0" expanded="false" />
+                <element signature="e#2498#2822#0" expanded="false" />
+                <element signature="e#4585#4877#0" expanded="false" />
+                <element signature="e#8853#9793#0" expanded="false" />
+                <element signature="e#9858#11564#0" expanded="false" />
+                <element signature="e#11634#12434#0" expanded="false" />
+                <element signature="e#12503#13172#0" expanded="false" />
+                <element signature="e#13240#13350#0" expanded="false" />
+                <element signature="e#16247#16329#0" expanded="false" />
+                <element signature="e#16746#19797#0" expanded="false" />
+                <element signature="e#19856#21342#0" expanded="false" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="CHS_Constants.csv" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/CHS_Constants.csv">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="1553" selection-start-line="0" selection-start-column="1550" selection-end-line="0" selection-end-column="1553" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="basic.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/site-packages/scipy/linalg/basic.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="226">
+              <caret line="686" column="0" selection-start-line="686" selection-start-column="0" selection-end-line="686" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -115,19 +134,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pool.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/multiprocessing/pool.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="226">
-              <caret line="393" column="0" selection-start-line="393" selection-start-column="0" selection-end-line="393" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
     </leaf>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="Julien &lt;julien.cousineau@gmail.com&gt;" />
+      </list>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="IdeDocumentHistory">
@@ -402,7 +416,14 @@
       <option name="project" value="LOCAL" />
       <updated>1499288336712</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="July 6">
+      <created>1499374645412</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1499374645412</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -443,57 +464,44 @@
     <MESSAGE value="Change test routines" />
     <MESSAGE value="July 4" />
     <MESSAGE value="July 5" />
-    <option name="LAST_COMMIT_MESSAGE" value="July 5" />
+    <MESSAGE value="July 6" />
+    <option name="LAST_COMMIT_MESSAGE" value="July 6" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>307</line>
+          <line>346</line>
           <option name="timeStamp" value="20" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>614</line>
-          <option name="timeStamp" value="34" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>525</line>
+          <line>573</line>
           <option name="timeStamp" value="45" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>595</line>
-          <option name="timeStamp" value="48" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>458</line>
-          <option name="timeStamp" value="64" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>571</line>
-          <option name="timeStamp" value="67" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/ios.py</url>
-          <line>603</line>
-          <option name="timeStamp" value="69" />
+          <line>686</line>
+          <option name="timeStamp" value="82" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="70" />
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="113" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="M_res2[:,:,:1]" language="Python" />
-        <watch expression="M_res" language="Python" />
-        <watch expression="M_all" language="Python" />
-        <watch expression="res_M" language="Python" />
-        <watch expression="pinv_svd" language="Python" />
-        <watch expression="M_constants" language="Python" />
+        <watch expression="station['constituents']['eta'][rc1, 0, 0]" language="Python" />
+        <watch expression="M_A[0]" language="Python" />
+        <watch expression="station['constituents']['eta'][sc1, 0, 1]" language="Python" />
+        <watch expression="M_A[0]" language="Python" />
+        <watch expression="station['constituents']" language="Python" />
       </configuration>
     </watches-manager>
   </component>
@@ -551,14 +559,6 @@
         <state />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/timeit.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="99" column="0" selection-start-line="99" selection-start-column="0" selection-end-line="99" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/site-packages/scipy/linalg/decomp_svd.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="226">
@@ -575,13 +575,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test.py">
+    <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/site-packages/scipy/linalg/basic.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="508">
-          <caret line="131" column="0" selection-start-line="131" selection-start-column="0" selection-end-line="131" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="226">
+          <caret line="686" column="0" selection-start-line="686" selection-start-column="0" selection-end-line="686" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -593,27 +591,68 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_bundle/pydev_monkey_qt.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="70" column="0" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/AppData/Local/Continuum/Anaconda2/Lib/timeit.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="99" column="0" selection-start-line="99" selection-start-column="0" selection-end-line="99" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/CHS_Constants.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="1553" selection-start-line="0" selection-start-column="1550" selection-end-line="0" selection-end-column="1553" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="326">
+          <caret line="100" column="27" selection-start-line="100" selection-start-column="27" selection-end-line="100" selection-end-column="27" />
+          <folding>
+            <element signature="e#0#21#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/timeseries.csv">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/ios.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="431">
-          <caret line="609" column="0" selection-start-line="609" selection-start-column="0" selection-end-line="609" selection-end-column="0" />
+        <state relative-caret-position="187">
+          <caret line="113" column="60" selection-start-line="113" selection-start-column="60" selection-end-line="113" selection-end-column="60" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-            <element signature="e#438#1292#0" expanded="false" />
-            <element signature="e#1713#1907#0" expanded="false" />
-            <element signature="e#1946#2013#0" expanded="false" />
-            <element signature="e#2050#2449#0" expanded="false" />
-            <element signature="e#2484#2808#0" expanded="false" />
-            <element signature="e#3569#3861#0" expanded="false" />
-            <element signature="e#7837#8777#0" expanded="false" />
-            <element signature="e#8842#10548#0" expanded="false" />
-            <element signature="e#10618#11418#0" expanded="false" />
-            <element signature="e#11487#12156#0" expanded="false" />
-            <element signature="e#12224#12334#0" expanded="false" />
-            <element signature="e#14392#14599#0" expanded="false" />
-            <element signature="e#15236#15318#0" expanded="false" />
-            <element signature="e#15394#15667#0" expanded="false" />
-            <marker date="1499374420133" expanded="false" signature="13123:14337" ph="..." />
+            <element signature="e#452#1306#0" expanded="false" />
+            <element signature="e#1727#1921#0" expanded="false" />
+            <element signature="e#1960#2027#0" expanded="false" />
+            <element signature="e#2064#2463#0" expanded="false" />
+            <element signature="e#2498#2822#0" expanded="false" />
+            <element signature="e#4585#4877#0" expanded="false" />
+            <element signature="e#8853#9793#0" expanded="false" />
+            <element signature="e#9858#11564#0" expanded="false" />
+            <element signature="e#11634#12434#0" expanded="false" />
+            <element signature="e#12503#13172#0" expanded="false" />
+            <element signature="e#13240#13350#0" expanded="false" />
+            <element signature="e#16247#16329#0" expanded="false" />
+            <element signature="e#16746#19797#0" expanded="false" />
+            <element signature="e#19856#21342#0" expanded="false" />
           </folding>
         </state>
       </provider>

@@ -14,7 +14,7 @@ def testCHS1():
     # stations = stations[:1]
     stations=stations[np.where(stations['id'] == 60)]
     # stations = np.concatenate((stations, stations, stations, stations, stations, stations, stations, stations, stations, stations))
-    # cons = np.array(['Z0', 'M2'])
+    cons = np.array(['Z0', 'M2','S2'])
 
     t = timeit.Timer(functools.partial(ios.Run, datetimes=datetimes, stations=stations,cons=cons))
     print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
@@ -81,7 +81,8 @@ def testCHSExtract():
 def testCHSExtractInput():
     csvPath = r'CHS_Constants.csv'
     inputTS = r'timeseries.csv'
-    ios = IOS()
+
+
 
     vars = [dict(name="Date", type="date"),
             dict(name="WL", type="float"),
@@ -126,15 +127,16 @@ def testCHSExtractInput():
     Us=np.asarray(Us)
     Vs=np.asarray(Vs)
 
+
     stations = getCHS(csvPath)
     # np.where((stations['xy'] > 45.15) & (stations['xy'] < 45.25))[0]
     stations = stations[18:19]
-    cons = stations['constituents']['name'][0, :]
-    cons = np.array(['Z0', 'M2'])
+
+    cons = np.array(['Z0', 'M2','S2','MS4'])
+    ios = IOS(stations, cons)
 
 
-
-    t = timeit.Timer(functools.partial(ios.extractConstituents, datetimes=datetimes, ts=np.asarray([[WLs,Us,Vs]]), stations=stations, cons=cons))
+    t = timeit.Timer(functools.partial(ios.extractConstituents, datetimes=datetimes, ts=np.asarray([[WLs,Us,Vs]])))
     print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
 
 
