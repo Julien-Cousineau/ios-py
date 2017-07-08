@@ -13,7 +13,7 @@ def _pickle_method(m):
 copy_reg.pickle(types.MethodType, _pickle_method)
 
 
-class IOS:
+class IOS(object):
     def __init__(self,stations,cons):
         # Types
         self.astroType = np.dtype([('d1', 'f8'),
@@ -76,27 +76,78 @@ class IOS:
         # Properties
         self._stations=None
         self._cons = None
+        self._datetimes=None
+        self._astro=None
+        self._waveS = None
+        self._waveD = None
+        self._refstations = None
+        self._nprocessor = 0
+
 
         # Ini newcons and newshalls
         self._newcons, self._newshalls = self.getIOS()
-        self._stations=stations
-        self._cons = cons
+        self.stations=stations
+        self.cons = cons
 
+    @property
+    def nprocessor(self):
+        return self._nprocessor
+    @nprocessor.setter
+    def nprocessor(self,value):
+        self._nprocessor = value
+
+    @property
+    def waveS(self):
+        return self._waveS
+
+    @property
+    def waveD(self):
+        return self._waveD
     @property
     def stations(self):
         return self._stations
 
     @stations.setter
-    def stations(self,stations):
-        self._stations=stations
+    def stations(self,value):
+        self._stations=value
+        self.getRefStations()
+        if(self.waveS is not None):
+            self.getWaveD()
+
+    @property
+    def refstations(self):
+        return self._refstations
 
     @property
     def cons(self):
         return self._cons
 
     @cons.setter
-    def cons(self,cons):
-        self._cons=cons
+    def cons(self,value):
+        self._cons=value
+        if(self.datetimes is not None):
+            self.getWaveS()
+        if (self.waveS is not None):
+            self.getWaveD()
+
+    @property
+    def datetimes(self):
+        return self._datetimes
+
+    @datetimes.setter
+    def datetimes(self,value):
+        self._datetimes = value
+        self.getAstro()
+        self.getWaveS()
+        self.getWaveD()
+
+    @property
+    def ndatetimes(self):
+        return len(self.datetimes)
+
+    @property
+    def astro(self):
+        return self._astro
 
     @property
     def newcons(self):
@@ -137,7 +188,8 @@ class IOS:
                          ('v', 'f8'),
                          ('freq', 'f8')])
 
-    def getSWaveType(self,ndatetime, nMc, nmc):
+    def getSWaveType(self, nMc, nmc):
+        ndatetime=self.ndatetimes
         return np.dtype([('ndatetime', 'i4'),
                          ('datetime', 'datetime64[m]', ndatetime),
                          ('dthr', 'f8', ndatetime),
@@ -156,7 +208,8 @@ class IOS:
                          ('m_v', 'f8', (ndatetime, nmc)),
                          ])
 
-    def getDWaveType(self,ndatetime, nMc, nmc):
+    def getDWaveType(self, nMc, nmc):
+        ndatetime = self.ndatetimes
         return np.dtype([('M_u', 'f8', (ndatetime, nMc)),
                          ('M_f', 'f8', (ndatetime, nMc)),
                          ('m_u', 'f8', (ndatetime, nmc)),
@@ -172,16 +225,16 @@ class IOS:
 
     # ------------------------------------------------------------------------------------------------------------------
     # Functions
-    def getAstro(self,datetimes):
-        # Description here...
+    def getAstro(self):
+        """ Compute astro angles
 
-    
+        """
+        datetimes = self.datetimes
         _d1 = datetimes - np.datetime64('1899-12-31T12:00')
         d1 = _d1.astype('timedelta64[s]') / np.timedelta64(1, 'D') # d1 [1-D Array of Datetimes]
     
         _h1 = datetimes - np.datetime64('1899-12-31T00:00')
         h1 = _h1.astype('timedelta64[s]') / np.timedelta64(1, 'D')
-
 
         nDatetimes = len(d1)
         astro = np.zeros(nDatetimes, dtype=self.astroType)
@@ -214,8 +267,7 @@ class IOS:
         astro['tau'] = astro['hh'] / 24.0 + astro['h'] - astro['s']
         astro['dtau'] = 1 + astro['dh'] - astro['ds']
     
-        return astro
-
+        self._astro=astro
 
     def getIOS(self):
         # Description here...
@@ -316,8 +368,22 @@ class IOS:
     
         return newshalls
 
+    def getRefStations(self):
+        stations = self.stations
 
-    def getRefStations(self,minLat, maxLat, nstep, cons):
+        nstations = len(stations)
+        if nstations > 10:
+            maxY = np.max(stations['xy'][:, 1])
+            minY = np.min(stations['xy'][:, 1])
+            refstations = self._getRefStations(minY, maxY, 10)
+        else:
+            refstations = stations
+
+        self._refstations=refstations
+
+        # return refstations,idx
+
+    def _getRefStations(self,minLat, maxLat, nstep, cons):
         # Description here...
         # Function to reduce # of station
 
@@ -337,111 +403,36 @@ class IOS:
         idx = np.argmin(np.abs(refstations['xy'][:, 1] - stations['xy'][:, 1, np.newaxis]), axis=1)
         return idx
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # Functions (Generate Time-Series)
-    def Run(self,datetimes):
-        waveS,refstations,idx = self._generateTimeV(datetimes)
 
-        start = time.clock()
-        waveD = self.generateSpaceV(waveS, refstations)
-        print("generateSpaceV {0}".format(time.clock() - start))
+    def Run(self):
+        self.getTS()
 
-        start = time.clock()
-
-        values =  self.generateTimeSpace(waveS, waveD, idx)
-        print("generateTimeSpace {0}".format(time.clock() - start))
-        with open(r'temp_0.csv', 'w') as f:
-            self.writeCSV(f,values)
-
-    def RunP(self, nprocessor,datetimes):
-        waveS, refstations, idx = self._generateTimeV(datetimes)
-
-        start = time.clock()
-        p = Pool(nprocessor)
-        t = functools.partial(self._pGenerateSpaceV, waveS=waveS, stations=refstations)
-        nrefstations = len(refstations)
-        waveD = np.asarray(p.map(t, xrange(nrefstations))).ravel()
-        print("generateSpaceV {0}".format(time.clock() - start))
-        p.close()
-        p.join()
-
-
-        p = Pool(nprocessor)
-
-        tt = functools.partial(self._pGenerateTimeSpace, waveS=waveS, waveD=waveD, idx=idx)
-
-        nrows = int(math.ceil(len(self.stations) / 100))
-        divider=10
-
-        nrowspergroup=int(math.ceil(nrows/divider))
-        with open(r'temp_10.csv', 'w') as f:
-            for i in range(divider):
-                start = time.clock()
-                istart=i*nrowspergroup
-                iend =istart + nrowspergroup
-                results = p.map(tt, xrange(istart,iend))
-                print("generateTimeSpace {0}".format(time.clock() - start))
-                for result in results:
-                    stationids=result[0]
-                    values = result[1]
-                    self.writeCSV(f, stationids, values)
-
-
-    def writeCSV(self,f,values):
+    def writeCSV(self,f,ids,values):
         wl=values[0]
         u = values[1]
         v = values[2]
-        stations = self.stations
-        stationids = stations['id']
-        for i in range(len(stationids)):
-            id = stationids[i]
+
+        for i in range(len(ids)):
+            id = ids[i]
             ts = wl[i]
             f.write(str(id) + ",")
             f.write(",".join(map("{:.3f}".format, ts)))
             f.write("\n")
 
-    def _generateTimeV(self,datetimes):
-        stations = self.stations
 
+
+    def getRefIds(self):
+        return self.getClosestRefStation(self.refstations, self.stations)
+
+    def getWaveS(self):
         start = time.clock()
-        waveS = self.generateTimeV(datetimes)
-        print("generateTimeV {0}".format(time.clock() - start))
 
-        nstations = len(stations)
-        if nstations > 10:
-            maxY = np.max(stations['xy'][:, 1])
-            minY = np.min(stations['xy'][:, 1])
-            refstations = self.getRefStations(minY, maxY, 10)
-        else:
-            refstations = stations
-
-        idx = self.getClosestRefStation(refstations, stations)
-        return waveS,refstations,idx
-
-    def _pGenerateSpaceV(self,x, waveS, stations):
-        pstations = stations[x:x + 1]
-        return self.generateSpaceV(waveS, pstations)
-
-    def _pGenerateTimeSpace(self,x, waveS, waveD, idx):
-        stations=self.stations
-        i = 100 * x
-        j = 100 * (x + 1)
-        if j > len(stations):
-            j = len(stations)
-        pstations = stations[i:j]
-        pidx = idx[i:j]
-
-        values = self.generateTimeSpace(waveS, waveD, pstations, pidx)
-
-
-
-        return [pstations['id'],values]
-
-    def generateTimeV(self, datetimes):
+        datetimes = self.datetimes
         newcons = self.newcons
         newshalls = self.newshalls
-        astro = self.getAstro(datetimes)
+        astro = self.astro
         cons = self.cons
+        ndatetime = self.ndatetimes
 
         b = newcons['name'][:, 0]
         c = newshalls['name'][:, 0]
@@ -450,11 +441,11 @@ class IOS:
         rc1 = np.where(b == cons[:, None])[0]
         sc1 = np.where(c == cons[:, None])[0]
 
-        ndatetime = len(datetimes)
+
         nMc = len(rc)
         nmc = len(sc)
 
-        waveS = np.zeros(1, dtype=self.getSWaveType(ndatetime, nMc, nmc))
+        waveS = np.zeros(1, dtype=self.getSWaveType(nMc, nmc))
         waveS['ndatetime'][0] = ndatetime
         waveS['datetime'][0] = datetimes
         waveS['dthr'][0] = np.asarray(
@@ -503,18 +494,41 @@ class IOS:
         waveS['factors'] = newshalls['shallcons']['factor'][sc, 0]
         waveS['m_freq'][0] = np.sum(waveS['M_freq'][0][:, waveS['icons'][0]] * waveS['factors'][0], axis=-1)
         waveS['m_v'][0] = np.sum(waveS['M_v'][0][:, waveS['icons'][0]] * waveS['factors'][0], axis=-1)
-        return waveS
 
-    def generateSpaceV(self,waveS, refstations):
-        ndatetime = waveS['ndatetime'][0]
+        self._waveS = waveS
+        print("waveS {0}".format(time.clock() - start))
+
+    def getWaveD(self):
+        start = time.clock()
+
+        refstations = self.refstations
+        nprocessor = self.nprocessor
+        if(nprocessor>1):
+            p = Pool(nprocessor)
+            nrefstations = len(refstations)
+            waveD = np.asarray(p.map(self._getWaveDp, xrange(nrefstations))).ravel()
+        else:
+            waveD = self._getWaveD(refstations)
+
+        print("waveD {0}".format(time.clock() - start))
+        self._waveD = waveD
+
+    def _getWaveDp(self,x):
+        refstations = self.refstations
+        pstations = refstations[x:x + 1]
+        return self._getWaveD(pstations)
+
+    def _getWaveD(self,pstations):
+        waveS = self.waveS
+
         rc1 = waveS['rc1'][0][:, 0]
         sc1 = waveS['sc1'][0][:, 0]
         nMc = len(rc1)
         nmc = len(sc1)
-        npoint = len(refstations)
-        waveD = np.zeros(npoint, dtype=self.getDWaveType(ndatetime, nMc, nmc))
+        npoint = len(pstations)
+        waveD = np.zeros(npoint, dtype=self.getDWaveType(nMc, nmc))
 
-        slat = np.sin((np.pi) * (refstations['xy'][:, 1] / 180.0))
+        slat = np.sin((np.pi) * (pstations['xy'][:, 1] / 180.0))
         p = slat[:, None]
 
         satShape = (waveS['M_freq'][0].shape[0], slat.shape[0],) + waveS['satCorr'][0].shape
@@ -536,8 +550,51 @@ class IOS:
         waveD['m_u'] = np.sum(waveD['M_u'][:, :, waveS['icons'][0]] * waveS['factors'][0], axis=-1)
         return waveD
 
-    def generateTimeSpace(self,waveS, waveD, stations, idx):
+    def getTS(self):
+        start = time.clock()
+        nprocessor = self.nprocessor
+        stations = self.stations
+        nstations = len(stations)
+        if (nprocessor > 1):
+            nrows = int(math.ceil(float(nstations) / 100.0))
+            divider = 10
 
+            nrowspergroup = int(math.ceil(float(nrows) / divider))
+            with open(r'temp_10.csv', 'w') as f:
+                for i in range(divider):
+
+                    istart = i * nrowspergroup
+                    iend = istart + nrowspergroup
+                    p = Pool(nprocessor)
+                    results = p.map(self._getTSp, xrange(istart, iend))
+
+                    for result in results:
+                        stationids = result[0]
+                        values = result[1]
+                        self.writeCSV(f, stationids, values)
+        else:
+            values = self._getTS(stations, self.getRefIds())
+            with open(r'temp_0.csv', 'w') as f:
+                self.writeCSV(f,self.getRefIds(), values)
+        print("getTS {0}".format(time.clock() - start))
+
+    def _getTSp(self, x):
+        stations = self.stations
+        i = 100 * x
+        j = 100 * (x + 1)
+        if j > len(stations):
+            j = len(stations)
+        pstations = stations[i:j]
+        idx = self.getRefIds()
+        pidx = idx[i:j]
+
+        values = self._getTS(pstations, pidx)
+
+        return [pstations['id'], values]
+
+    def _getTS(self, stations, idx):
+        waveS = self.waveS
+        waveD = self.waveD
         rc1=self.getMajorIndex()
         sc1 = self.getMinorIndex()
 
@@ -573,15 +630,10 @@ class IOS:
             # res_2.append(M_res2 + m_res2 - waveTS['M_A'][:, 0])
         return np.asarray(res_1)
 
-
-
-
-
-
-
-
-    def generateTSConstituents(self,waveS, waveD):
+    def generateTSConstituents(self):
         # ONLY need to run this for unique latitude position...
+        waveS = self.waveS
+        waveD = self.waveD
         stations = self.stations
         ndatetime = waveS['ndatetime'][0]
 
@@ -647,13 +699,15 @@ class IOS:
             self.stations['constituents'][0][type][:, 0, 1]= 0.0
 
 
-    def extractConstituents(self,datetimes,ts):
+    def extractConstituents(self,ts):
+        datetimes = self.datetimes
         self.resetConstants()
         stations=self.stations
 
-        waveS, refstations, idx = self._generateTimeV(datetimes)
-        waveD = self.generateSpaceV(waveS, refstations)
-        M_res = self.generateTSConstituents(waveS, waveD)
+        # refstations, idx = self._generateTimeV()
+        refstations = self.refstations
+        idx = self.getRefIds()
+        M_res = self.generateTSConstituents()
         M_inv=[]
 
         for i in range(len(refstations)):

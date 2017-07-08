@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 def testCHS1():
     csvPath = r'CHS_Constants.csv'
 
-    ios = IOS()
+    # ios = IOS()
     datetimes = np.arange('2000-01-01', '2000-02-01', np.timedelta64(10, 'm'), dtype='datetime64')
     stations = getCHS(csvPath)
     cons = stations['constituents']['name'][0, :]
@@ -15,8 +15,10 @@ def testCHS1():
     stations=stations[np.where(stations['id'] == 60)]
     # stations = np.concatenate((stations, stations, stations, stations, stations, stations, stations, stations, stations, stations))
     cons = np.array(['Z0', 'M2','S2'])
-
-    t = timeit.Timer(functools.partial(ios.Run, datetimes=datetimes, stations=stations,cons=cons))
+    ios = IOS(stations, cons)
+    ios.datetimes = datetimes
+    ios.nprocessor = 10
+    t = timeit.Timer(functools.partial(ios.Run))
     print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
 
 def testCHS2():
@@ -134,16 +136,17 @@ def testCHSExtractInput():
 
     cons = np.array(['Z0', 'M2','S2','MS4'])
     ios = IOS(stations, cons)
+    ios.datetimes=datetimes
+    ios.nprocessor=10
 
-
-    t = timeit.Timer(functools.partial(ios.extractConstituents, datetimes=datetimes, ts=np.asarray([[WLs,Us,Vs]])))
+    t = timeit.Timer(functools.partial(ios.extractConstituents, ts=np.asarray([[WLs,Us,Vs]])))
     print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
 
 
 if __name__ == "__main__":
-    # testCHS1()
+    testCHS1()
     # testCHS2()
     #testCHS1Parallel()
     # testCHSExtract()
-    testCHSExtractInput()
+    # testCHSExtractInput()
 # ----------------------------------------------------------------------------------------------------------------------
