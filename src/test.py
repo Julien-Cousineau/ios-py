@@ -1,7 +1,10 @@
 from readCHS import *
+from parserSELAFIN import *
 from ios import *
 import timeit, functools
 from datetime import date, datetime, timedelta
+import datetime
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Test Functions
 def testCHS1():
@@ -9,7 +12,7 @@ def testCHS1():
 
     # ios = IOS()
     datetimes = np.arange('2000-01-01', '2000-02-01', np.timedelta64(10, 'm'), dtype='datetime64')
-    stations = getCHS(csvPath)
+    stations = readCHS(csvPath)
     cons = stations['constituents']['name'][0, :]
     # stations = stations[:1]
     stations=stations[np.where(stations['id'] == 60)]
@@ -17,7 +20,7 @@ def testCHS1():
     cons = np.array(['Z0', 'M2','S2'])
     ios = IOS(stations, cons)
     ios.datetimes = datetimes
-    ios.nprocessor = 10
+    ios.nprocessor = 0
     t = timeit.Timer(functools.partial(ios.Run))
     print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
 
@@ -26,7 +29,7 @@ def testCHS2():
 
     ios = IOS()
     datetimes = np.arange('2000-01-01', '2003-01-01', np.timedelta64(3, 'h'), dtype='datetime64')
-    stations = getCHS(csvPath)
+    stations = readCHS(csvPath)
     stations = stations[:1]
     cons = stations['constituents']['name'][0, :]
 
@@ -39,7 +42,7 @@ def testCHS1Parallel():
 
     ios = IOS()
     datetimes = np.arange('2000-01-01', '2003-01-01', np.timedelta64(3, 'h'), dtype='datetime64')
-    stations = getCHS(csvPath)
+    stations = readCHS(csvPath)
     stations = stations[:1000]
     # stations = np.concatenate((stations, stations, stations, stations, stations, stations, stations, stations, stations, stations))
     # cons = stations['constituents']['name'][0, 1]
@@ -54,7 +57,7 @@ def testCHSExtract():
 
     ios = IOS()
     datetimes = np.arange('2000-01-01', '2000-02-01', np.timedelta64(3, 'h'), dtype='datetime64')
-    stations = getCHS(csvPath)
+    stations = readCHS(csvPath)
     stations = stations[:15]
     cons = np.array(['Z0', 'M2', 'S2', 'M4', 'K1'])
 
@@ -67,7 +70,7 @@ def testCHSExtract():
 #
 #     ios = IOS()
 #     datetimes = np.arange('2000-01-01', '2000-01-02', np.timedelta64(15, 'm'), dtype='datetime64')
-#     stations = getCHS(csvPath)
+#     stations = readCHS(csvPath)
 #     stations = stations[:4]
 #
 #     stations[1] = stations[0]
@@ -79,6 +82,53 @@ def testCHSExtract():
 #     t = timeit.Timer(functools.partial(ios.generateTS, datetimes=datetimes, stations=stations))
 #     print("Testing CHS (latitude) - " + t.timeit(1))
 #
+
+def testSLF1():
+    slfPath = r'bof.2D.slf'
+
+
+    # type: (object, object) -> object
+    slf = SELAFIN(slfPath)
+
+    ncount = 10
+    index=np.arange(ncount)
+
+
+    year = int(repr(slf.DATETIME[0]))
+    month = int(repr(slf.DATETIME[1]))
+    day = int(repr(slf.DATETIME[2]))
+    hour = int(repr(slf.DATETIME[3]))
+    minute = int(repr(slf.DATETIME[4]))
+    second = int(repr(slf.DATETIME[5]))
+    ddate = datetime.date(year, month, day)
+    time = datetime.time(hour, minute, second)
+    start = datetime.datetime.combine(ddate, time)
+
+    datetimes = [np.datetime64(start + datetime.timedelta(seconds=s)) for s in slf.tags['times']]
+    datetimes = np.asarray(datetimes)
+
+    cons = np.array(['Z0', 'M2', 'S2', 'MS4'])
+    stations = np.zeros(ncount, dtype=stationType)
+    stations['id']=index
+    stations['xy'] = np.asarray([slf.MESHX[index], slf.MESHY[index]]).T
+
+    for i,con in enumerate(cons):
+        stations['constituents']['name'][:,i]=con
+
+
+    _values = slf.getSERIES(index,[0,1,3])
+    _values = np.einsum('ijk->jik', _values)
+    values = np.copy(_values)
+    values[:,0],values[:,1],values[:,2] = _values[:,2],_values[:,0],_values[:,1]
+
+
+    ios = IOS(stations, cons)
+    ios.datetimes = datetimes
+    ios.nprocessor = 10
+
+    t = timeit.Timer(functools.partial(ios.extractConstituents, ts=np.asarray(values)))
+    print("Testing CHS(# of station: {0}, # of steps: {1}) - {2}".format(len(stations), len(datetimes), t.timeit(1)))
+
 
 def testCHSExtractInput():
     csvPath = r'CHS_Constants.csv'
@@ -130,11 +180,18 @@ def testCHSExtractInput():
     Vs=np.asarray(Vs)
 
 
-    stations = getCHS(csvPath)
+    stations = readCHS(csvPath)
     # np.where((stations['xy'] > 45.15) & (stations['xy'] < 45.25))[0]
     stations = stations[18:19]
 
     cons = np.array(['Z0', 'M2','S2','MS4'])
+
+    stations['constituents']['name'][istation, icon] = constituent_name
+    stations['constituents']['eta'][istation, icon] = (amplitude, utmPhase)
+
+
+
+
     ios = IOS(stations, cons)
     ios.datetimes=datetimes
     ios.nprocessor=10
@@ -144,9 +201,10 @@ def testCHSExtractInput():
 
 
 if __name__ == "__main__":
-    testCHS1()
+    # testCHS1()
     # testCHS2()
     #testCHS1Parallel()
     # testCHSExtract()
     # testCHSExtractInput()
+    testSLF1()
 # ----------------------------------------------------------------------------------------------------------------------

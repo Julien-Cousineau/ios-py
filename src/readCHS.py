@@ -18,7 +18,7 @@ stationType = np.dtype([('name', '|S32'),
                         ('constituents', constituentType, 200)])
 # ------------------------------------------------------------------------------
 # Functions
-def getCHS(filePath):
+def readCHS(filePath):
     # type: (object, object) -> object
     with open(filePath, 'rb') as file:
         reader = csv.DictReader(file)

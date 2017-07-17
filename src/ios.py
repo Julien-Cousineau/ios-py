@@ -82,6 +82,7 @@ class IOS(object):
         self._waveD = None
         self._refstations = None
         self._nprocessor = 0
+        self._isMesh = False
 
 
         # Ini newcons and newshalls
@@ -95,6 +96,13 @@ class IOS(object):
     @nprocessor.setter
     def nprocessor(self,value):
         self._nprocessor = value
+
+    @property
+    def isMesh(self):
+        return self._isMesh
+
+
+
 
     @property
     def waveS(self):
@@ -592,7 +600,11 @@ class IOS(object):
 
         return [pstations['id'], values]
 
-    def _getTS(self, stations, idx):
+
+
+
+
+    def _getTS(self, stations, idx=None,itime=None):
         waveS = self.waveS
         waveD = self.waveD
         rc1=self.getMajorIndex()
@@ -603,6 +615,13 @@ class IOS(object):
         nstations = len(stations)
         waveTS = np.zeros(nstations, dtype=self.getPSType(nMc, nmc))
 
+        if (idx is None):
+            idx =np.asarray([0, nstations-1])
+
+        if (itime is None):
+            itime =np.asarray([0, waveS['ndatetime']-1])
+
+
         res_1=[]
         res_2 = []
         for var in ['eta','u','v']:
@@ -611,19 +630,19 @@ class IOS(object):
             waveTS['m_A'][:, :, 0] = stations['constituents'][var][:, sc1, 0, 0]
             waveTS['m_phi'][:, :, 0] = stations['constituents'][var][:, sc1, 0, 1]
 
-            M_revgmt = waveS['M_freq'][0] * waveS['dthr'][0][:, None] + waveD['M_u'][idx] + waveS['M_v'][0] - waveTS['M_phi'][
+            M_revgmt = waveS['M_freq'][0,itime] * waveS['dthr'][0,itime, None] + waveD['M_u'][idx,itime] + waveS['M_v'][0,itime] - waveTS['M_phi'][
                                                                                                               :, :, 0][:,
                                                                                                               np.newaxis] / 360.0
             M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
-            M_res = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt), axis=-1)
+            M_res = np.sum(waveD['M_f'][idx,itime] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt), axis=-1)
             # M_res2 = np.sum(waveD['M_f'][idx] * waveTS['M_A'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt), axis=-1)
 
-            m_revgmt = waveS['m_freq'][0] * waveS['dthr'][0][:, None] + waveD['m_u'][idx] + waveS['m_v'][0] - waveTS[
+            m_revgmt = waveS['m_freq'][0,itime] * waveS['dthr'][0,itime, None] + waveD['m_u'][idx,itime] + waveS['m_v'][0,itime] - waveTS[
                                                                                                                   'm_phi'][
                                                                                                               :, :, 0][:,
                                                                                                               np.newaxis] / 360.0
             m_radgmt = 2.0 * np.pi * np.modf(m_revgmt)[0]
-            m_res = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
+            m_res = np.sum(waveD['m_f'][idx,itime] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
             # m_res2 = np.sum(waveD['m_f'][idx] * waveTS['m_A'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt), axis=-1)
 
             res_1.append(M_res + m_res - waveTS['M_A'][:, 0])
@@ -639,7 +658,6 @@ class IOS(object):
 
         rc1=self.getMajorIndex()
         sc1 = self.getMinorIndex()
-
 
         nMc = len(rc1)
         nmc = len(sc1)
@@ -695,14 +713,15 @@ class IOS(object):
 
     def resetConstants(self):
         for k, type in enumerate(['eta', 'u', 'v']):
-            self.stations['constituents'][0][type][:, 0, 0]= 1.0
-            self.stations['constituents'][0][type][:, 0, 1]= 0.0
+            self.stations['constituents'][type][:,:, 0, 0]= 1.0
+            self.stations['constituents'][type][:,:, 0, 1]= 0.0
 
 
     def extractConstituents(self,ts):
         datetimes = self.datetimes
         self.resetConstants()
         stations=self.stations
+
 
         # refstations, idx = self._generateTimeV()
         refstations = self.refstations
@@ -739,6 +758,10 @@ class IOS(object):
 
 
             a=1
+
+    def writeConsituentsSLF(self,file):
+        return None
+
 
 
 
