@@ -1,9 +1,10 @@
 import numpy as np
-import os
+import os,sys
 import math,time,copy_reg,types
 from multiprocessing import Pool
 import scipy.linalg as linalg
 import pandas as pd
+
 
 def _pickle_method(m):
   if m.im_self is None:
@@ -13,8 +14,9 @@ def _pickle_method(m):
 
 copy_reg.pickle(types.MethodType, _pickle_method)
 
-from dtypes import stationType
+
 from modelTemporal import SWAVE
+from readCHS import to_csv
 
 
 
@@ -83,6 +85,10 @@ class IOS(object):
     df = pd.DataFrame(data=mf.T[:, type],columns=self.stations['id'])
     df.insert(0,"Datetime",self.datetimes)
     df.to_csv(outPath,**kwargs)
+    
+  def to_ccsv(self,outPath,type=0,**kwargs):
+    stations=self.stations
+    to_csv(outPath,stations)    
   
   def _getTS(self,i):
     istart = self.ngroup * i
@@ -144,26 +150,43 @@ class IOS(object):
     conNames = waveS.conNames
     shallowNames = waveS.shallowNames
     
-    rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== conNames)[0]
-    sc = np.where(self.stations['constituents']['name'][0, :, np.newaxis] == shallowNames)[0]
+    # rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== conNames)[0]
+    # sc = np.where(self.stations['constituents']['name'][0, :, np.newaxis] == shallowNames)[0]
+    
+    # rc = self.getIndex(conNames)
+    # sc =self.getIndex(shallowNames)
+    rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]==conNames)[0]
+    sc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]==shallowNames)[0]
+    
+    print "rc",rc
+    
+    # print conNames
+    # print self.stations['constituents'][:, rc]
     
     waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
     size = waveD.shape[0] 
     waveTS = np.zeros(size, dtype=self.getPSType(waveS.nrc, waveS.nsc))
 
-    waveTS['M'][:, :] = self.stations['constituents']['eta'][:, rc,0]
-    waveTS['m'][:, :] = self.stations['constituents']['eta'][:, sc,0]
+    waveTS['M'][:, :] = self.stations['constituents']['eta'][:, rc]
+    waveTS['m'][:, :] = self.stations['constituents']['eta'][:, sc]
     
     MPhase = M_freq *dthr[:,np.newaxis] + waveD['M_u'] + M_v
     mPhase = m_freq * dthr[:,np.newaxis] + waveD['m_u']  + m_v
     
+   
+    
     M_revgmt = MPhase - waveTS['M'][:, :, 1][:,np.newaxis] / 360.0
     M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
+   
+    # print M_v
     
+   
     
     M_resA = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt)
     M_resP = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt)
-    
+    M_resA = np.delete(M_resA, 0, axis=2) # Remove Zo
+    M_resP = np.delete(M_resP, 0, axis=2) # Remove Zo
+  
     
     M_all = np.zeros([size,ndatetime, ((waveS.nrc-1) * 2) + 1], dtype=np.float64)
     M_all[:, :, 0] = 1.0
@@ -182,6 +205,7 @@ class IOS(object):
       M_all=np.append(M_all,m_all,axis=2)
     
     
+    # print M_all
     return M_all
   
   
@@ -189,35 +213,42 @@ class IOS(object):
   
   def resetConstants(self):
     for k, type in enumerate(['eta', 'u', 'v']):
-      self.stations['constituents'][type][:,:, 0, 0]= 1.0
-      self.stations['constituents'][type][:,:, 0, 1]= 0.0
+      self.stations['constituents'][type][:,:,  0]= 1.0
+      self.stations['constituents'][type][:,:,  1]= 0.0
   
   
-  def extractConstituents(self,ts):
-    datetimes = self.datetimes
+  # def getIndex(self,names):
+  #   return np.where(self.stations['constituents']['name'][0,:,np.newaxis]==self.cons[np.isin(self.cons,names)])[1]
+  
+  def extractConstituents(self,datetimes,values):
+    
+    datetimes = self.datetimes =  datetimes
+    self.waveS.setDatetime(datetimes)
     self.resetConstants()
     stations=self.stations
-    
-    
-    # refstations, idx = self._generateTimeV()
-    # refstations = self.refstations
-    # idx = self.getRefIds()
-    M_res = self.generateTSConstituents(i)
+
+    M_res = self.generateTSConstituents(0)
     M_inv=[]
     
-    for i in range(len(refstations)):
+    for i in range(len(stations)):
       U, s, Vh = linalg.svd(M_res[i], full_matrices=False)
       pinv_svd = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
       M_inv.append(pinv_svd)
     
     M_inv=np.asarray(M_inv)
+
+    waveS = self.waveS
+    conNames = waveS.conNames
+    shallowNames = waveS.shallowNames    
+    rc = np.where(stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[1]
+    sc = np.where(stations['constituents']['name'][0,:]== shallowNames[:,np.newaxis])[1]
+    nrc1 = len(rc)
+    print rc,conNames
     
-    rc1 = self.getMajorIndex()
-    sc1 = self.getMinorIndex()
-    nrc1 = len(rc1)
-    
+    # print values.shape
+    # print M_inv.shape
     for j,station in enumerate(stations):
-      M_constants = np.einsum('ij,kj->ki', M_inv[idx[j]], ts[j])
+      M_constants = np.einsum('ij,kj->ki', M_inv[j], values[j])
       tmp_zo=M_constants[:, 0]
       M_u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
       tmp_zo[:]=0.0
@@ -226,10 +257,23 @@ class IOS(object):
       M_P = np.arctan2(M_v , M_u) * 180 / np.pi
       M_P[M_P < 0] += 360.0 # [-180,180] ~> [0,360]
       
+
       for k,type in enumerate(['eta','u','v']):
-        station['constituents'][type][rc1, 0, 0]=M_A[k][:nrc1]
-        station['constituents'][type][rc1, 0, 1]=M_P[k][:nrc1]
-        station['constituents'][type][sc1, 0, 0]=M_A[k][nrc1:]
-        station['constituents'][type][sc1, 0, 1]=M_P[k][nrc1:]
-
-
+        # print station['constituents'][type][rc, 0].shape
+        
+        station['constituents'][type][rc, 0]=M_A[k][:nrc1]
+        station['constituents'][type][rc, 1]=M_P[k][:nrc1]
+        station['constituents'][type][sc, 0]=M_A[k][nrc1:]
+        station['constituents'][type][sc, 1]=M_P[k][nrc1:]
+    print "JULIEN"
+    print rc,sc
+    print station['constituents']['eta'][rc, 0]
+    print station['constituents'][1]
+    print M_A[0][:nrc1]
+   
+    
+    rrr = np.where(self.stations['constituents']['name'][0,:] == np.append(conNames,shallowNames)[:,np.newaxis])[1]
+    www =  np.delete(np.arange(len(self.stations['constituents']['name'][0,:])),rrr)
+    for k, type in enumerate(['eta', 'u', 'v']):
+      stations['constituents'][type][:,www,  0]= 0.0
+    # print stations['constituents']['eta'] 

@@ -2,6 +2,8 @@ import numpy as np
 import time
 from iosdatabase import getIOSDatabase
 from astro import getAstro
+import pandas as pd
+import datetime
 
 def transform(xy,proj):
   import pyproj
@@ -64,8 +66,8 @@ class SWAVE:
     
     
     model = self.model = np.zeros(ndatetime, dtype=self.modelDType)
-    
-    model['dthr'] = np.asarray([dt.hour + dt.minute / 60.0 + dt.second / 3600.0 for dt in datetimes.astype(object)])
+    ddatetimes = map(lambda x:pd.to_datetime(x),datetimes)
+    model['dthr'] = np.asarray([dt.hour + dt.minute / 60.0 + dt.second / 3600.0 for dt in ddatetimes])
     
     doods = newcons['dood']
     phase = newcons['phase']

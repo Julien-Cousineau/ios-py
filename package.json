@@ -9,7 +9,9 @@
   },
   "scripts": {
     "git": "git add . && git commit -m 'comment here' && git push -u origin master",
-    "test": "cd test && python run.py"
+    "test": "cd test && python run.py",
+    "chs35": "cd test && python run.35.py",
+    "extract": "cd test && python run.extract.py"
   },
   "repository": {
     "type": "git",

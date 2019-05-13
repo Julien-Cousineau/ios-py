@@ -1,6 +1,20 @@
 import csv
 import numpy as np
-from ios import stationType
+from dtypes import stationType
+import pandas as pd
+
+def to_csv(filePath,stations,type='eta'):
+    
+    tmpdata = np.column_stack((stations['xy'][:,0],stations['xy'][:,1],stations['name'],stations['id']))
+    tmpdata = pd.DataFrame(data=tmpdata,columns=['Longitude','Latitude','Station Name','ID'])
+    
+    for con in  stations[0]['constituents']:
+        if len(con['name'])==0:continue
+        if type=='eta':
+            tmpdata[con['name']+"_Ampm"]=con['eta'][0]
+            tmpdata[con['name']+"_LocalPh"]=-1.0
+            tmpdata[con['name']+"_UTCPhas"]=con['eta'][1]
+    tmpdata.to_csv(filePath,index=None, header=True)
 
 def readCHS(filePath):
     # type: (object, object) -> object
@@ -41,4 +55,6 @@ def readCHS(filePath):
             stations['xy'][istation] = (longitude, latitude)
             istation += 1
         return stations
+
+
 
