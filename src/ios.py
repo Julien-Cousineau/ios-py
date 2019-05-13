@@ -135,6 +135,20 @@ class IOS(object):
     mf[istart:iend]=res_1
     del mf
   
+  
+  def getRes(self,i,type='M'):
+    istart = self.ngroup * i
+    iend = self.ngroup * (i+1)    
+    waveS = self.waveS
+    names = waveS.conNames if type == 'M' else waveS.shallowNames
+    msize  = waveS.nrc if type == 'M' else waveS.nsc
+    rc = np.where(self.stations['constituents']['name'][0,:]==names[:,np.newaxis])[0]
+    waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
+    size = waveD.shape[0] 
+    cts = self.stations['constituents']['eta'][:, rc]
+    MPhase = M_freq * dthr[:,np.newaxis] + waveD[type+'_u'] + waveS.model[type+'_v']
+    
+  
   def generateTSConstituents(self,i):
     istart = self.ngroup * i
     iend = self.ngroup * (i+1)
@@ -149,38 +163,22 @@ class IOS(object):
     
     conNames = waveS.conNames
     shallowNames = waveS.shallowNames
-    
-    # rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== conNames)[0]
-    # sc = np.where(self.stations['constituents']['name'][0, :, np.newaxis] == shallowNames)[0]
-    
-    # rc = self.getIndex(conNames)
-    # sc =self.getIndex(shallowNames)
-    rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]==conNames)[0]
-    sc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]==shallowNames)[0]
-    
-    print "rc",rc
-    
-    # print conNames
-    # print self.stations['constituents'][:, rc]
-    
+
+    rc = np.where(self.stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[0]
+    sc = np.where(self.stations['constituents']['name'][0,:]==shallowNames[:,np.newaxis])[0]
+
     waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
     size = waveD.shape[0] 
     waveTS = np.zeros(size, dtype=self.getPSType(waveS.nrc, waveS.nsc))
 
-    waveTS['M'][:, :] = self.stations['constituents']['eta'][:, rc]
-    waveTS['m'][:, :] = self.stations['constituents']['eta'][:, sc]
+    waveTS['M'] = self.stations['constituents']['eta'][:, rc]
+    waveTS['m'] = self.stations['constituents']['eta'][:, sc]
     
-    MPhase = M_freq *dthr[:,np.newaxis] + waveD['M_u'] + M_v
-    mPhase = m_freq * dthr[:,np.newaxis] + waveD['m_u']  + m_v
-    
-   
+    MPhase = M_freq * dthr[:,np.newaxis] + waveD['M_u'] + M_v
+    mPhase = m_freq * dthr[:,np.newaxis] + waveD['m_u'] + m_v
     
     M_revgmt = MPhase - waveTS['M'][:, :, 1][:,np.newaxis] / 360.0
     M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
-   
-    # print M_v
-    
-   
     
     M_resA = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt)
     M_resP = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt)
@@ -215,11 +213,7 @@ class IOS(object):
     for k, type in enumerate(['eta', 'u', 'v']):
       self.stations['constituents'][type][:,:,  0]= 1.0
       self.stations['constituents'][type][:,:,  1]= 0.0
-  
-  
-  # def getIndex(self,names):
-  #   return np.where(self.stations['constituents']['name'][0,:,np.newaxis]==self.cons[np.isin(self.cons,names)])[1]
-  
+
   def extractConstituents(self,datetimes,values):
     
     datetimes = self.datetimes =  datetimes
@@ -228,14 +222,7 @@ class IOS(object):
     stations=self.stations
 
     M_res = self.generateTSConstituents(0)
-    M_inv=[]
     
-    for i in range(len(stations)):
-      U, s, Vh = linalg.svd(M_res[i], full_matrices=False)
-      pinv_svd = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
-      M_inv.append(pinv_svd)
-    
-    M_inv=np.asarray(M_inv)
 
     waveS = self.waveS
     conNames = waveS.conNames
@@ -243,12 +230,12 @@ class IOS(object):
     rc = np.where(stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[1]
     sc = np.where(stations['constituents']['name'][0,:]== shallowNames[:,np.newaxis])[1]
     nrc1 = len(rc)
-    print rc,conNames
-    
-    # print values.shape
-    # print M_inv.shape
+
     for j,station in enumerate(stations):
-      M_constants = np.einsum('ij,kj->ki', M_inv[j], values[j])
+      U, s, Vh = linalg.svd(M_res[j], full_matrices=False)
+      M_inv = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
+      
+      M_constants = np.einsum('ij,kj->ki', M_inv, values[j])
       tmp_zo=M_constants[:, 0]
       M_u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
       tmp_zo[:]=0.0
@@ -265,15 +252,10 @@ class IOS(object):
         station['constituents'][type][rc, 1]=M_P[k][:nrc1]
         station['constituents'][type][sc, 0]=M_A[k][nrc1:]
         station['constituents'][type][sc, 1]=M_P[k][nrc1:]
-    print "JULIEN"
-    print rc,sc
-    print station['constituents']['eta'][rc, 0]
-    print station['constituents'][1]
-    print M_A[0][:nrc1]
    
     
     rrr = np.where(self.stations['constituents']['name'][0,:] == np.append(conNames,shallowNames)[:,np.newaxis])[1]
     www =  np.delete(np.arange(len(self.stations['constituents']['name'][0,:])),rrr)
     for k, type in enumerate(['eta', 'u', 'v']):
       stations['constituents'][type][:,www,  0]= 0.0
-    # print stations['constituents']['eta'] 
+   

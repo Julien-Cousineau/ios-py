@@ -37,7 +37,7 @@ def CHS():
   # ios.to_csv(outPath,type=0, index=None, header=True,date_format="%Y/%m/%d %H:%M:%S")
   
 def compare():
-  print filecmp.cmp('8410140.Julien.template.txt','8410140.Julien.txt')
+  print filecmp.cmp('35.Julien.template.csv','35.Julien.csv')
   
   
 if __name__ == "__main__":
