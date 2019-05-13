@@ -1,0 +1,24 @@
+{
+  "name": "environment",
+  "version": "1.0.0",
+  "description": "IOS Tidal Package (python) using vector notation.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "git": "git add . && git commit -m 'comment here' && git push -u origin master",
+    "test": "cd test && python run.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Julien-Cousineau/ios-py.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Julien-Cousineau/ios-py/issues"
+  },
+  "homepage": "https://github.com/Julien-Cousineau/ios-py#readme"
+}
