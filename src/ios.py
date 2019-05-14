@@ -40,13 +40,6 @@ class IOS(object):
     self.waveS = SWAVE(self.cons)
     self.waveS.setStations(stations,proj)
     
-  
-
-  def getPSType(self,nMc, nmc):
-    return np.dtype([('M', 'f8', (nMc, 2)),
-                     ('m', 'f8', (nmc, 2)),
-                     ])
-  
 
   
   def getMemoryFile(self):
@@ -90,139 +83,93 @@ class IOS(object):
     stations=self.stations
     to_csv(outPath,stations)    
   
+  def getWaveD(self,i):
+    istart = self.ngroup * i
+    iend = self.ngroup * (i+1)
+    waveD = self.waveS.waveD[self.waveS.refslatIndex[istart:iend]] 
+    return waveD,waveD.shape[0]
+  
   def _getTS(self,i):
     istart = self.ngroup * i
     iend = self.ngroup * (i+1)
     waveS =self.waveS
-    stations = self.stations
     ndatetime = waveS.ndatetime
-    M_freq = waveS.model['M_freq']
-    m_freq = waveS.model['m_freq']
-    dthr = waveS.model['dthr']
-    M_v = waveS.model['M_v']
-    m_v = waveS.model['m_v']
-    
-    waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
-    conNames = waveS.conNames
-    shallowNames = waveS.shallowNames
-    
-    rc = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== conNames)[0]
-    sc = np.where(self.stations['constituents']['name'][0, :, np.newaxis] == shallowNames)[0]
-    
-    size = waveD.shape[0] 
-    waveTS = np.zeros(size, dtype=self.getPSType(waveS.nrc, waveS.nsc))
-    
-    res_1=np.zeros((size,3,ndatetime), dtype='float32')
-    
-    MPhase = M_freq *dthr[:,np.newaxis] + waveD['M_u'] + M_v
-    mPhase = m_freq * dthr[:,np.newaxis] + waveD['m_u']  + m_v
-    
-    for i,var in enumerate(['eta','u','v']):
-      waveTS['M'] = stations['constituents'][var][:, rc]
-      waveTS['m'] = stations['constituents'][var][:, sc]
-      
-      M_revgmt = MPhase - waveTS['M'][:, :, 1][:,np.newaxis] / 360.0
-      M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
-      M_res = np.sum(waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt), axis=-1)
-      
-      m_revgmt = mPhase  - waveTS['m'][:, :, 1][:,np.newaxis] / 360.0
-      m_radgmt = 2.0 * np.pi * np.modf(m_revgmt)[0]
-      m_res= np.sum(waveD['m_f'] * waveTS['m'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt), axis=-1)
-      
-      res_1[:, i, :] = M_res + m_res
-        
+    waveD,size = self.getWaveD(i)
+    res=np.zeros((size,3,ndatetime), dtype='float32')
+    for j,var in enumerate(['eta','u','v']):
+      [M_A,M_P] = self.getRes(i,type='M',value=var)
+      [m_A,m_P] = self.getRes(i,type='m',value=var)
+      M_res = np.sum(M_A, axis=-1)
+      m_res = np.sum(m_A, axis=-1)
+      res[:, j, :] = M_res + m_res
     mf = self.getMemoryFile()
-    mf[istart:iend]=res_1
+    mf[istart:iend]=res
     del mf
-  
-  
-  def getRes(self,i,type='M'):
-    istart = self.ngroup * i
-    iend = self.ngroup * (i+1)    
-    waveS = self.waveS
-    names = waveS.conNames if type == 'M' else waveS.shallowNames
-    msize  = waveS.nrc if type == 'M' else waveS.nsc
-    rc = np.where(self.stations['constituents']['name'][0,:]==names[:,np.newaxis])[0]
-    waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
-    size = waveD.shape[0] 
-    cts = self.stations['constituents']['eta'][:, rc]
-    MPhase = M_freq * dthr[:,np.newaxis] + waveD[type+'_u'] + waveS.model[type+'_v']
     
+  def getRes(self,i,type='M',value='eta'):
+    waveS = self.waveS
+    waveD,size= self.getWaveD(i)
+    dthr  = waveS.model['dthr']
+    names = waveS.conNames if type == 'M' else waveS.shallowNames
+    
+    freq  = waveS.model[type + '_freq']
+    u     = waveD[type+'_u']
+    v     = waveS.model[type+'_v']
+    rc    = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== names)[0]
+    
+    cts   = self.stations['constituents'][value][:, rc]
+    amp   = cts[:, :, 0]
+    theta = cts[:, :, 1]
+    _f     = waveD[type + '_f']
+    
+    phase  = freq * dthr[:,np.newaxis] + u + v
+    revgmt = phase - theta / 360.0
+    radgmt = 2.0 * np.pi * np.modf(revgmt)[0]
+    
+    f      = _f  * amp[:, np.newaxis] 
+    A      = f * np.cos(radgmt)
+    P      = f * np.sin(radgmt)
+    
+    return [A,P]
+    
+  
+  def __generateTSConstituents(self,i,res,type="M"):
+    [A,P] = res
+    waveS = self.waveS
+    waveD,size = self.getWaveD(i)
+    ndatetime = waveS.ndatetime
+    
+    if type =="M":
+      A = np.delete(A, 0, axis=2) # Remove Zo
+      P = np.delete(P, 0, axis=2) # Remove Zo
+      all = np.zeros([size,ndatetime, ((waveS.nrc-1) * 2) + 1], dtype=np.float64)
+      all[:, :, 0] = 1.0
+      all[:, :, 1::2] = A
+      all[:, :, 2::2] = P
+    else:
+      all = np.zeros([size,ndatetime, waveS.nsc * 2], dtype=np.float64)
+      all[:, :, ::2] = A
+      all[:, :, 1::2] = P
+    return all
   
   def generateTSConstituents(self,i):
-    istart = self.ngroup * i
-    iend = self.ngroup * (i+1)
-    waveS = self.waveS
-    M_freq = waveS.model['M_freq']
-    m_freq = waveS.model['m_freq']
-    dthr = waveS.model['dthr']
-    M_v = waveS.model['M_v']
-    m_v = waveS.model['m_v']
+    # M_A,M_P = self.getRes(i)
+    # m_A,m_P = self.getRes(i,type='m')
+    M_all = self.__generateTSConstituents(i,self.getRes(i))
+    m_all = self.__generateTSConstituents(i,self.getRes(i,type='m'),type='m')
     
-    ndatetime = waveS.ndatetime
+    return np.append(M_all,m_all,axis=2)
     
-    conNames = waveS.conNames
-    shallowNames = waveS.shallowNames
-
-    rc = np.where(self.stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[0]
-    sc = np.where(self.stations['constituents']['name'][0,:]==shallowNames[:,np.newaxis])[0]
-
-    waveD = waveS.waveD[self.waveS.refslatIndex[istart:iend]]
-    size = waveD.shape[0] 
-    waveTS = np.zeros(size, dtype=self.getPSType(waveS.nrc, waveS.nsc))
-
-    waveTS['M'] = self.stations['constituents']['eta'][:, rc]
-    waveTS['m'] = self.stations['constituents']['eta'][:, sc]
-    
-    MPhase = M_freq * dthr[:,np.newaxis] + waveD['M_u'] + M_v
-    mPhase = m_freq * dthr[:,np.newaxis] + waveD['m_u'] + m_v
-    
-    M_revgmt = MPhase - waveTS['M'][:, :, 1][:,np.newaxis] / 360.0
-    M_radgmt = 2.0 * np.pi * np.modf(M_revgmt)[0]
-    
-    M_resA = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.cos(M_radgmt)
-    M_resP = waveD['M_f'] * waveTS['M'][:, :, 0][:, np.newaxis] * np.sin(M_radgmt)
-    M_resA = np.delete(M_resA, 0, axis=2) # Remove Zo
-    M_resP = np.delete(M_resP, 0, axis=2) # Remove Zo
-  
-    
-    M_all = np.zeros([size,ndatetime, ((waveS.nrc-1) * 2) + 1], dtype=np.float64)
-    M_all[:, :, 0] = 1.0
-    M_all[:, :, 1::2] = M_resA
-    M_all[:, :, 2::2] = M_resP
-    
-    if(waveS.nsc>0):
-      m_revgmt = mPhase  - waveTS['m'][:, :, 1][:,np.newaxis] / 360.0
-      m_radgmt = 2.0 * np.pi * np.modf(m_revgmt)[0]
-      m_resA = waveD['m_f'] * waveTS['m'][:, :, 0][:, np.newaxis] * np.cos(m_radgmt)
-      m_resP = waveD['m_f'] * waveTS['m'][:, :, 0][:, np.newaxis] * np.sin(m_radgmt)
-      
-      m_all = np.zeros([size,ndatetime, waveS.nsc * 2], dtype=np.float64)
-      m_all[:, :, ::2] = m_resA
-      m_all[:, :, 1::2] = m_resP
-      M_all=np.append(M_all,m_all,axis=2)
-    
-    
-    # print M_all
-    return M_all
-  
-  
-  
-  
-  def resetConstants(self):
-    for k, type in enumerate(['eta', 'u', 'v']):
-      self.stations['constituents'][type][:,:,  0]= 1.0
-      self.stations['constituents'][type][:,:,  1]= 0.0
-
   def extractConstituents(self,datetimes,values):
     
     datetimes = self.datetimes =  datetimes
     self.waveS.setDatetime(datetimes)
-    self.resetConstants()
+    for k, type in enumerate(['eta', 'u', 'v']):
+      self.stations['constituents'][type][:,:,  0]= 1.0
+      self.stations['constituents'][type][:,:,  1]= 0.0
     stations=self.stations
 
     M_res = self.generateTSConstituents(0)
-    
 
     waveS = self.waveS
     conNames = waveS.conNames
@@ -237,25 +184,23 @@ class IOS(object):
       
       M_constants = np.einsum('ij,kj->ki', M_inv, values[j])
       tmp_zo=M_constants[:, 0]
-      M_u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
+      u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
       tmp_zo[:]=0.0
-      M_v = np.insert(M_constants[:, 2::2], 0, tmp_zo, axis=1)
-      M_A = np.sqrt(M_u**2+M_v**2)
-      M_P = np.arctan2(M_v , M_u) * 180 / np.pi
-      M_P[M_P < 0] += 360.0 # [-180,180] ~> [0,360]
+      v = np.insert(M_constants[:, 2::2], 0, tmp_zo, axis=1)
+      A = np.sqrt(u**2+v**2)
+      P = np.arctan2(v , u) * 180 / np.pi
+      P[P < 0] += 360.0 # [-180,180] ~> [0,360]
       
 
       for k,type in enumerate(['eta','u','v']):
-        # print station['constituents'][type][rc, 0].shape
-        
-        station['constituents'][type][rc, 0]=M_A[k][:nrc1]
-        station['constituents'][type][rc, 1]=M_P[k][:nrc1]
-        station['constituents'][type][sc, 0]=M_A[k][nrc1:]
-        station['constituents'][type][sc, 1]=M_P[k][nrc1:]
+        station['constituents'][type][rc, 0]=A[k][:nrc1]
+        station['constituents'][type][rc, 1]=P[k][:nrc1]
+        station['constituents'][type][sc, 0]=A[k][nrc1:]
+        station['constituents'][type][sc, 1]=P[k][nrc1:]
    
     
-    rrr = np.where(self.stations['constituents']['name'][0,:] == np.append(conNames,shallowNames)[:,np.newaxis])[1]
-    www =  np.delete(np.arange(len(self.stations['constituents']['name'][0,:])),rrr)
+    # Remove default amplitude of 1.0
+    index =  np.where(self.stations['constituents']['name'][0,:] == np.append(conNames,shallowNames)[:,np.newaxis])[1]
+    index =  np.delete(np.arange(len(self.stations['constituents']['name'][0,:])),index)
     for k, type in enumerate(['eta', 'u', 'v']):
-      stations['constituents'][type][:,www,  0]= 0.0
-   
+      stations['constituents'][type][:,index,  0]= 0.0
