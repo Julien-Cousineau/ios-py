@@ -56,7 +56,6 @@ class SWAVE:
     start = time.clock()
     self.datetimes = datetimes
     
-    
     rc = self.rc
     sc = self.sc
     newcons = self.newcons[rc]
@@ -100,6 +99,7 @@ class SWAVE:
 
     # Shallow Constituents
     icons = self.icons = newshalls['shallcons']['icon']
+    
     for value in np.arange(0, 45):
       if len(np.where(rc == value)[0]) > 0:
         icons[icons == value] = np.where(rc == value)[0][0]

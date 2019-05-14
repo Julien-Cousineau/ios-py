@@ -18,9 +18,6 @@ copy_reg.pickle(types.MethodType, _pickle_method)
 from modelTemporal import SWAVE
 from readCHS import to_csv
 
-
-
-
 class IOS(object):
   def __init__(self,cons,stations,proj='epsg:3857',folder='',npy="dummy.npy",ngroup=1000,debug=False):
     # self.reset()
@@ -33,15 +30,10 @@ class IOS(object):
     self.npy = npy
     self.ngroup = ngroup
     self.npyPath = os.path.join(self.folder,self.npy)
-    # self._refstations = None
-    
-    # self._datetimes=None
-    
+
     self.waveS = SWAVE(self.cons)
     self.waveS.setStations(stations,proj)
     
-
-  
   def getMemoryFile(self):
     npyPath = self.npyPath
     waveS = self.waveS
@@ -71,8 +63,6 @@ class IOS(object):
   
     return self.file
     
-    
-    # return results[0]
   def to_csv(self,outPath,type=0,**kwargs):
     mf = self.getMemoryFile()
     df = pd.DataFrame(data=mf.T[:, type],columns=self.stations['id'])
@@ -133,7 +123,7 @@ class IOS(object):
     return [A,P]
     
   
-  def __generateTSConstituents(self,i,res,type="M"):
+  def _conMatrix(self,i,res,type="M"):
     [A,P] = res
     waveS = self.waveS
     waveD,size = self.getWaveD(i)
@@ -152,16 +142,12 @@ class IOS(object):
       all[:, :, 1::2] = P
     return all
   
-  def generateTSConstituents(self,i):
-    # M_A,M_P = self.getRes(i)
-    # m_A,m_P = self.getRes(i,type='m')
-    M_all = self.__generateTSConstituents(i,self.getRes(i))
-    m_all = self.__generateTSConstituents(i,self.getRes(i,type='m'),type='m')
-    
-    return np.append(M_all,m_all,axis=2)
+  def conMatrix(self,i):
+    return np.append(self._conMatrix(i,self.getRes(i)),
+                     self._conMatrix(i,self.getRes(i,type='m'),type='m'),
+                     axis=2)
     
   def extractConstituents(self,datetimes,values):
-    
     datetimes = self.datetimes =  datetimes
     self.waveS.setDatetime(datetimes)
     for k, type in enumerate(['eta', 'u', 'v']):
@@ -169,7 +155,7 @@ class IOS(object):
       self.stations['constituents'][type][:,:,  1]= 0.0
     stations=self.stations
 
-    M_res = self.generateTSConstituents(0)
+    conM = self.conMatrix(0)
 
     waveS = self.waveS
     conNames = waveS.conNames
@@ -177,12 +163,14 @@ class IOS(object):
     rc = np.where(stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[1]
     sc = np.where(stations['constituents']['name'][0,:]== shallowNames[:,np.newaxis])[1]
     nrc1 = len(rc)
-
+    # print conM
     for j,station in enumerate(stations):
-      U, s, Vh = linalg.svd(M_res[j], full_matrices=False)
+      U, s, Vh = linalg.svd(conM[j], full_matrices=False)
       M_inv = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
       
       M_constants = np.einsum('ij,kj->ki', M_inv, values[j])
+      # print M_constants.shape
+      # print np.einsum('ij,lkj->lki', M_inv, values).shape
       tmp_zo=M_constants[:, 0]
       u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
       tmp_zo[:]=0.0
@@ -191,14 +179,12 @@ class IOS(object):
       P = np.arctan2(v , u) * 180 / np.pi
       P[P < 0] += 360.0 # [-180,180] ~> [0,360]
       
-
       for k,type in enumerate(['eta','u','v']):
         station['constituents'][type][rc, 0]=A[k][:nrc1]
         station['constituents'][type][rc, 1]=P[k][:nrc1]
         station['constituents'][type][sc, 0]=A[k][nrc1:]
         station['constituents'][type][sc, 1]=P[k][nrc1:]
    
-    
     # Remove default amplitude of 1.0
     index =  np.where(self.stations['constituents']['name'][0,:] == np.append(conNames,shallowNames)[:,np.newaxis])[1]
     index =  np.delete(np.arange(len(self.stations['constituents']['name'][0,:])),index)

@@ -12,10 +12,11 @@ The goal of IOS-py is to convert the code from FORTRAN77 to python using vector 
 
 
 ## Usage
-Empty
+```bash
 conda activate iospy
-
-
+npm run test
+npm run extract
+```
 ## Options
 Empty
 
@@ -24,6 +25,15 @@ Empty
 
 ## Test Cases
 Empty
+
+## TODO
+ArgsPas
+Installation documentation
+Examples
+Performances
+upload to pip
+
+
 
 ## License
 ios-py is an open source python library and licensed under [MIT](../master/LICENSE).

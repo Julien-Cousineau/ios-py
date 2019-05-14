@@ -14,6 +14,11 @@ def to_csv(filePath,stations,type='eta'):
             tmpdata[con['name']+"_Ampm"]=con['eta'][0]
             tmpdata[con['name']+"_LocalPh"]=-1.0
             tmpdata[con['name']+"_UTCPhas"]=con['eta'][1]
+        else:
+            tmpdata[con['name']+"_u"]=con['u'][0]
+            tmpdata[con['name']+"_v"]=con['v'][0]
+            tmpdata[con['name']+"_uUTC"]=con['u'][1]
+            tmpdata[con['name']+"_vUTC"]=con['v'][1]
     tmpdata.to_csv(filePath,index=None, header=True)
 
 def readCHS(filePath):
