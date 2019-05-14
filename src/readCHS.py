@@ -21,7 +21,7 @@ def to_csv(filePath,stations,type='eta'):
             tmpdata[con['name']+"_vUTC"]=con['v'][1]
     tmpdata.to_csv(filePath,index=None, header=True)
 
-def readCHS(filePath):
+def read_csv(filePath):
     # type: (object, object) -> object
     with open(filePath, 'rb') as file:
         reader = csv.DictReader(file)
@@ -61,5 +61,13 @@ def readCHS(filePath):
             istation += 1
         return stations
 
-
+def read_npy(filepath):
+    fp = np.memmap(filepath, dtype='int32', mode='r',shape=1)
+    return np.memmap(filepath, dtype=stationType, mode='r+', shape=fp[0], order='F',offset=4)
+  
+def to_npy(filepath,stations):
+    nstations = len(stations)
+    fp = np.memmap(filepath, dtype='int32', mode='w+', shape=1)
+    fp[0]=nstations
+    return np.memmap(filepath, dtype=stationType, mode='r+', shape=nstations, order='F',offset=4)
 

@@ -9,6 +9,10 @@
   },
   "scripts": {
     "git": "git add . && git commit -m 'comment here' && git push -u origin master",
+    "test_decompose1": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath timeseries.csv",
+    "test_decompose2": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath timeseries.npy",
+    "test_decompose3": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationFilePath stations.csv --constituents Z0,M2,O1 --conFilePath timeseries2.csv",
+    "test_compose": "cd src && python main.py decompose --folder ../test --conFilePath con.csv --constituents Z0,M2,O1 --stationIDS 65 --startDate xxx --endDate xxx --step 10 --etaOnly true --outPath outPath.csv",
     "test": "cd test && python run.py",
     "chs35": "cd test && python run.35.py",
     "extract": "cd test && python run.extract.py"

@@ -6,7 +6,7 @@ The IOS Tidal Package is a set of programs, manuals, and test data for analysing
 The [original package](http://www.pac.dfo-mpo.gc.ca/science/oceans/tidal-marees/index-eng.html) was developed by Mike Foreman at Fisheries and Oceans Canada (mike.foreman@dfo-mpo.gc.ca) 
 
 ## Intent
-The goal of IOS-py is to convert the code from FORTRAN77 to python using vector notation. This will increase performance and allows to perform tidal analyse on million of nodes.
+The goal of IOS-py is to convert the code from FORTRAN77 to python using vector notation. This will increase performance and allows uers to perform tidal analyses on million of points.
 
 ## Installation
 
@@ -27,13 +27,12 @@ Empty
 Empty
 
 ## TODO
-ArgsPas
-Installation documentation
+Test Cases
 Examples
 Performances
-upload to pip
-
-
+Upload to pip
+Test different projections
+Test slf (decompose and compose)
 
 ## License
 ios-py is an open source python library and licensed under [MIT](../master/LICENSE).

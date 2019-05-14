@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../src')
-from readCHS import readCHS
+from readCHS import read_csv
 from ios import *
 import timeit, functools
 import pandas as pd
@@ -14,7 +14,7 @@ def CHS():
 
   # datetimes = np.arange('2001-06-21', '2001-09-22', np.timedelta64(10, 'm'), dtype='datetime64')
 
-  stations = readCHS(CHSPath)
+  stations = read_csv(CHSPath)
   stations = stations[np.where(stations['id']==35)]
   # print stations
   # cons = stations['constituents']['name'][0, :]
@@ -33,7 +33,8 @@ def CHS():
   
  
   ios.extractConstituents(datetime,np.asarray([[WL,U,V]]))
-  ios.to_ccsv('35.Julien.csv')
+  ios.stations_to_csv('35.Julien.csv')
+  
   # ios.to_csv(outPath,type=0, index=None, header=True,date_format="%Y/%m/%d %H:%M:%S")
   
 def compare():

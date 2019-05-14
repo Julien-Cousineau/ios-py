@@ -16,7 +16,7 @@ copy_reg.pickle(types.MethodType, _pickle_method)
 
 
 from modelTemporal import SWAVE
-from readCHS import to_csv
+from readCHS import to_csv,to_npy
 
 class IOS(object):
   def __init__(self,cons,stations,proj='epsg:3857',folder='',npy="dummy.npy",ngroup=1000,debug=False):
@@ -36,15 +36,19 @@ class IOS(object):
     
   def getMemoryFile(self):
     npyPath = self.npyPath
-    waveS = self.waveS
-    shape = (waveS.nstations,3,waveS.ndatetime)
-    return np.memmap(npyPath, dtype='float32', mode='r+', shape=shape, order='F')
+    fp = np.memmap(npyPath, dtype='int32', mode='r',shape=3)
+    shape = (fp[0],fp[1],fp[2])
+    return np.memmap(npyPath, dtype='float32', mode='r+', shape=shape, order='F',offset=12)
   
   def createMemoryFile(self):
     npyPath = self.npyPath
     waveS = self.waveS
     shape = (waveS.nstations,3,waveS.ndatetime)
-    return np.memmap(npyPath, dtype='float32', mode='w+', shape=shape, order='F')
+    fp = np.memmap(npyPath, dtype='int32', mode='w+', shape=3)
+    fp[0]=waveS.nstations
+    fp[1]=3
+    fp[2]=waveS.ndatetime
+    return np.memmap(npyPath, dtype='float32', mode='r+', shape=shape, order='F',offset=12)
   
   def getTS(self,datetimes):
     self.datetimes = datetimes
@@ -69,9 +73,11 @@ class IOS(object):
     df.insert(0,"Datetime",self.datetimes)
     df.to_csv(outPath,**kwargs)
     
-  def to_ccsv(self,outPath,type=0,**kwargs):
-    stations=self.stations
-    to_csv(outPath,stations)    
+  def stations_to_csv(self,outPath,type=0,**kwargs):
+    to_csv(outPath,self.stations)    
+  
+  def stations_to_npy(self,outPath):
+    to_npy(outPath,self.stations)
   
   def getWaveD(self,i):
     istart = self.ngroup * i

@@ -3,6 +3,7 @@ from ios import IOS
 import numpy as np
 import pandas as pd
 from dtypes import stationType
+from readCHS import read_csv,read_npy
 
 def parseArgs():
     command_parser  = argparse.ArgumentParser(description='IOS')
@@ -40,7 +41,7 @@ def parseArgs():
     compose_parser.add_argument('--folder',required=True, help='Folder path')
     compose_parser.add_argument('--conFilePath',required=True, help='Harmonic constants filepath(.csv or .npy)')
     compose_parser.add_argument('--constituents',default=None, help='Select constituents')
-    compose_parser.add_argument('--stations',default=None, help='Station IDs')
+    compose_parser.add_argument('--stationIDS',default=None, help='Station IDs')
     compose_parser.add_argument('--startDate',required=True, help='Start Date')
     compose_parser.add_argument('--endDate',required=True, help='End Date')
     compose_parser.add_argument('--step',type=int,default=10, help='Step in minutes')
@@ -65,7 +66,7 @@ def decompose(props):
     latitude = props['latitude']
     constituents = props['constituents'].split(",")
     conFilePath = os.path.join(folder,props['conFilePath'])
-    npyPath = os.path.splitext(conFilePath)[0] + ".npy"
+    fileType = '.csv' if os.path.splitext(conFilePath)[1]=='.csv' else '.npy'
     
     stations = np.zeros(1, dtype=stationType)
     stations['name'][0] = stationName
@@ -73,7 +74,7 @@ def decompose(props):
     stations['xy'][0]   = (longitude, latitude)
     stations['proj'][0] ='epsg:3857'
     
-    ios = IOS(constituents,stations,npy=npyPath)
+    ios = IOS(constituents,stations,npy='temp.npy')
     
     ts = pd.read_csv(timeSeriesPath,parse_dates=['Datetime'])
     if not 'Datetime' in ts.columns:sys.exit("Datetime column does not exist")
@@ -85,16 +86,16 @@ def decompose(props):
     v        = ts['v'].values if 'v' in ts.columns else np.zeros(len(eta))
     
     ios.extractConstituents(datetime,np.asarray([[eta,u,v]]))
-    ios.to_ccsv(conFilePath)    
+    if fileType=='.csv': ios.stations_to_csv(conFilePath)
+    else:ios.stations_to_npy(conFilePath)
 
 def decomposeArray(props):
     folder = props['folder']
     timeSeriesPath = os.path.join(folder,props['timeSeriesPath'])
     stationFilePath = os.path.join(folder,props['stationFilePath'])
-    conFilePath = os.path.join(folder,props['conFilePath'])
-    npyPath = os.path.splitext(conFilePath)[0] + ".npy"
-    
     constituents = props['constituents'].split(",")
+    conFilePath = os.path.join(folder,props['conFilePath'])
+    fileType = '.csv' if os.path.splitext(conFilePath)[1]=='.csv' else '.npy'
     
     df = pd.read_csv(stationFilePath)
     
@@ -104,7 +105,7 @@ def decomposeArray(props):
     stations['xy']   = np.columnstack(df['Longitude'].values,  df['Latitude'].values)
     stations['proj'][:] ='epsg:3857'
     
-    ios = IOS(constituents,stations,npy=npyPath)
+    ios = IOS(constituents,stations,npy='temp.npy')
     
     ts = pd.read_csv(timeSeriesPath,parse_dates=['Datetime'])
     if not 'Datetime' in ts.columns:sys.exit("Datetime column does not exist")
@@ -116,29 +117,38 @@ def decomposeArray(props):
     v        = ts['v'].values if 'v' in ts.columns else np.zeros(len(eta))
     
     ios.extractConstituents(datetime,np.asarray([[eta,u,v]]))
-    ios.to_ccsv(conFilePath)
+    if fileType=='.csv': ios.stations_to_csv(conFilePath)
+    else:ios.stations_to_npy(conFilePath)
 
 def decomposeSLF(props):
     return
 
-def compose(props):
-    return
 
-def generate(props):
-    modelPath = os.path.join(props['folder'],props['modelPath'])
+def compose(props):
+    folder = props['folder']
+    conFilePath = os.path.join(folder,props['conFilePath'])
     outPath = os.path.join(props['folder'],props['outPath'])
+    stationIDS = props['stationIDs'].split(",")
+    constituents = props['constituents'].split(",")
     start = props['startDate']
     end = props['endDate']
     step = props['step']
-    type = props['type']
+    etaOnly = props['etaOnly']
+    
+    ext =  os.path.splitext(conFilePath)[1]
+    if ext != '.csv' and ext != '.npy':sys.exit("Con filepath should be .csv or .npy")
+    if ext=='.csv':stations = read_csv(conFilePath)
+    if ext=='.npy':stations = read_npy(conFilePath)
     
     datetimes = np.arange(start, end, np.timedelta64(step, 'm'), dtype='datetime64')
     
-    return None
-
-def extract(props):
+    stations = stations[np.where(stations['id']==stationIDS)] # TODO check this
     
-    return None
+    cons = stations['constituents']['name'][0, :] if constituents is None else constituents
+    ios = IOS(cons,stations,debug=True)
+    ios.getTS(datetimes)
+    ios.to_csv(outPath,type=0, index=None, header=True,date_format="%Y/%m/%d %H:%M:%S")
+    
 
 if __name__== "__main__":
     main(vars(parseArgs()))

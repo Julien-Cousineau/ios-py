@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../src')
-from readCHS import readCHS
+from readCHS import read_csv
 from ios import *
 import timeit, functools
 import pandas as pd
@@ -13,7 +13,7 @@ def NOAA():
 
   datetimes = np.arange('2001-06-21', '2001-09-22', np.timedelta64(10, 'm'), dtype='datetime64')
 
-  stations = readCHS(filePath)
+  stations = read_csv(filePath)
 
   stations = stations[np.where(stations['id']==8410140)]
   cons = stations['constituents']['name'][0, :]
