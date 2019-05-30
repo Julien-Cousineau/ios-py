@@ -21,7 +21,7 @@ def NOAA():
   cons = np.delete(cons, np.where(cons == 'Z0'))
   ios = IOS(cons,stations,debug=True)
   ts = ios.getTS(datetimes)
-  ios.to_csv(outPath,type=0, index=None, header=True,date_format="%Y/%m/%d %H:%M:%S")
+  ios.to_csv(outPath,index=None, header=True,date_format="%Y/%m/%d %H:%M:%S")
   
 def compare():
   print filecmp.cmp('8410140.Julien.template.txt','8410140.Julien.txt')

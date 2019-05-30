@@ -63,11 +63,13 @@ def read_csv(filePath):
 
 def read_npy(filepath):
     fp = np.memmap(filepath, dtype='int32', mode='r',shape=1)
-    return np.memmap(filepath, dtype=stationType, mode='r+', shape=fp[0], order='F',offset=4)
+    return np.memmap(filepath, dtype=stationType, mode='r+', shape=fp[0],offset=4)
   
 def to_npy(filepath,stations):
     nstations = len(stations)
     fp = np.memmap(filepath, dtype='int32', mode='w+', shape=1)
     fp[0]=nstations
-    return np.memmap(filepath, dtype=stationType, mode='r+', shape=nstations, order='F',offset=4)
+    fp = np.memmap(filepath, dtype=stationType, mode='r+', shape=nstations,offset=4)
+    fp[:] = stations
+    return fp
 

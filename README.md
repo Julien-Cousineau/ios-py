@@ -20,6 +20,9 @@ npm run extract
 ## Options
 Empty
 
+## [File Format](./docs/format.md)
+
+
 ## Examples
 Empty
 
@@ -28,6 +31,8 @@ Empty
 
 ## TODO
 Test Cases
+- check decompose-compose with npy...it seems it not saving properly the station
+
 Examples
 Performances
 Upload to pip

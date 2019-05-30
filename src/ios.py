@@ -67,9 +67,19 @@ class IOS(object):
   
     return self.file
     
-  def to_csv(self,outPath,type=0,**kwargs):
+  def to_csv(self,outPath,vars=None,**kwargs):
+    vars = ['eta','u','v'] if vars is None else vars
+    cols =[]
+    variables = np.array(['eta', 'u','v'])
+    index =  np.isin(variables,vars)
+    for id in self.stations['id']:
+      for l in variables[index]:
+        cols.append('{0}_{1}'.format(id,l))
+    
     mf = self.getMemoryFile()
-    df = pd.DataFrame(data=mf.T[:, type],columns=self.stations['id'])
+    mf = mf[:,index]
+    table = np.einsum('ijk->kij', mf).reshape(len(self.datetimes), -1)
+    df=pd.DataFrame(data=table,columns=cols)
     df.insert(0,"Datetime",self.datetimes)
     df.to_csv(outPath,**kwargs)
     
@@ -113,13 +123,15 @@ class IOS(object):
     v     = waveS.model[type+'_v']
     rc    = np.where(self.stations['constituents']['name'][0,:,np.newaxis]== names)[0]
     
+  
     cts   = self.stations['constituents'][value][:, rc]
     amp   = cts[:, :, 0]
     theta = cts[:, :, 1]
     _f     = waveD[type + '_f']
     
+    
     phase  = freq * dthr[:,np.newaxis] + u + v
-    revgmt = phase - theta / 360.0
+    revgmt = phase - theta[:,np.newaxis] / 360.0
     radgmt = 2.0 * np.pi * np.modf(revgmt)[0]
     
     f      = _f  * amp[:, np.newaxis] 
@@ -154,29 +166,31 @@ class IOS(object):
                      axis=2)
     
   def extractConstituents(self,datetimes,values):
+    
     datetimes = self.datetimes =  datetimes
     self.waveS.setDatetime(datetimes)
     for k, type in enumerate(['eta', 'u', 'v']):
       self.stations['constituents'][type][:,:,  0]= 1.0
       self.stations['constituents'][type][:,:,  1]= 0.0
     stations=self.stations
-
+   
     conM = self.conMatrix(0)
 
     waveS = self.waveS
     conNames = waveS.conNames
+  
     shallowNames = waveS.shallowNames    
     rc = np.where(stations['constituents']['name'][0,:]==conNames[:,np.newaxis])[1]
     sc = np.where(stations['constituents']['name'][0,:]== shallowNames[:,np.newaxis])[1]
     nrc1 = len(rc)
-    # print conM
+   
     for j,station in enumerate(stations):
       U, s, Vh = linalg.svd(conM[j], full_matrices=False)
       M_inv = np.dot(np.dot(Vh.T, linalg.inv(np.diag(s))), U.T)
       
       M_constants = np.einsum('ij,kj->ki', M_inv, values[j])
-      # print M_constants.shape
-      # print np.einsum('ij,lkj->lki', M_inv, values).shape
+   
+   
       tmp_zo=M_constants[:, 0]
       u =np.insert(M_constants[:, 1::2], 0, tmp_zo, axis=1)
       tmp_zo[:]=0.0

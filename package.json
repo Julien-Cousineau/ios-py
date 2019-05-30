@@ -9,10 +9,17 @@
   },
   "scripts": {
     "git": "git add . && git commit -m 'comment here' && git push -u origin master",
-    "test_decompose1": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath timeseries.csv",
-    "test_decompose2": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath timeseries.npy",
-    "test_decompose3": "cd src && python main.py decompose --folder ../test --timeSeriesPath timeseries.csv --stationFilePath stations.csv --constituents Z0,M2,O1 --conFilePath timeseries2.csv",
-    "test_compose": "cd src && python main.py decompose --folder ../test --conFilePath con.csv --constituents Z0,M2,O1 --stationIDS 65 --startDate xxx --endDate xxx --step 10 --etaOnly true --outPath outPath.csv",
+    "validate_compose": "cd src && python main.py compose --folder ../test --conFilePath input/noaas.csv --stationIDS 8410140 --startDate 2001-06-21 --endDate 2001-09-22 --step 10 --consRemove Z0 --vars eta --outPath output/8410140.compute.csv && python main.py validate --folder ../test --input output/8410140.compute.csv --output input/8410140.validate.csv ",
+    "validate_decompose": "cd src && python main.py decompose --folder ../test --timeSeriesPath input/35.TS.csv --stationName \"ST STEPHEN\" --stationID 35 --longitude -67.2833 --latitude 45.2 --constituents Z0,M2,N2,S2,2N2,K1,M6,M4,O1,NU2 --conFilePath output/35.compute.csv && python main.py validate --folder ../test --input output/35.compute.csv --output input/35.validate.csv",
+    
+    "test_decompose1": "cd src && python main.py decompose --folder ../test --timeSeriesPath input/timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath output/test_decompose1.csv",
+    "test_decompose2": "cd src && python main.py decompose --folder ../test --timeSeriesPath input/timeseries.csv --stationName MYNAME --stationID 1 --longitude -50 --latitude 50 --constituents Z0,M2,O1 --conFilePath output/test_decompose2.npy",
+    "test_decompose3": "cd src && python main.py decompose --folder ../test --timeSeriesPath input/timeseries.csv --stationFilePath input/stations.csv --constituents Z0,M2,O1 --conFilePath output/test_decompose3.csv",
+    "test_compose1": "cd src && python main.py compose --folder ../test --conFilePath output/test_decompose1.csv --constituents Z0,M2,O1 --stationIDS 1 --startDate 2001-06-21 --endDate 2001-09-22 --step 10 --vars eta --outPath output/test_compose1.csv",
+    "test_compose2": "cd src && python main.py compose --folder ../test --conFilePath output/test_decompose2.npy --constituents Z0,M2,O1 --stationIDS 1 --startDate 2001-06-21 --endDate 2001-09-22 --step 10 --vars eta --outPath output/test_compose2.csv",
+    
+    "TARA_test": "cd src && python main.py compose --folder ../TARA --conFilePath input/CHS_Constants.csv --stationIDS 7120,7277,7735 --startDate 1988-12-06 --endDate 1990-11-02 --step 60 --consRemove Z0 --vars eta --outPath output/test.csv",
+    "top_station":"cd src && python main.py getTopConstants --folder ../test --conFilePath CHS_Constants.csv --stationIDS 35,65 --nTop 10",
     "test": "cd test && python run.py",
     "chs35": "cd test && python run.35.py",
     "extract": "cd test && python run.extract.py"
